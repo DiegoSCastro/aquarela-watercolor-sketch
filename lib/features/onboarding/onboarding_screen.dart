@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:aquarela_watercolor_sketch/main.dart' show navigateAfterOnboarding;
 import 'package:aquarela_watercolor_sketch/theme/components/pigment_button.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/motion.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart';
-import 'package:aquarela_watercolor_sketch/theme/tokens/radius.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/spacing.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/typography.dart';
 import 'illustrations/slide1_pocket.dart';
@@ -131,22 +131,7 @@ class _OnboardingView extends StatelessWidget {
                           if (page < OnboardingCubit.totalPages - 1) {
                             context.read<OnboardingCubit>().next();
                           } else {
-                            // TODO(diego): navigate to canvas (PR 1.1)
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Canvas chegando no PR 1.1!',
-                                  style: AquarelaTypography.bodyMedium.copyWith(
-                                    color: Paper.white,
-                                  ),
-                                ),
-                                backgroundColor: Pigment.ultramar,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(RadiusToken.md),
-                                ),
-                              ),
-                            );
+                            navigateAfterOnboarding(context);
                           }
                         },
                       ),
