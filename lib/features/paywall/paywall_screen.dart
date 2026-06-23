@@ -43,6 +43,17 @@ class PaywallScreen extends StatelessWidget {
     );
   }
 
+  /// Bottom CTA handler. If the build is Pro (debug/QA), call
+  /// [onPurchaseSuccess] so the caller can pop back. Otherwise
+  /// this is a free user dismissing the paywall — call [onClose].
+  void _onContinueTapped() {
+    if (PremiumConfig.current.isPremium) {
+      onPurchaseSuccess?.call();
+    } else {
+      onClose?.call();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,7 +174,8 @@ class PaywallScreen extends StatelessWidget {
               ),
             ),
 
-            // Bottom CTA — Continue free
+            // Bottom CTA — "Já sou Pro" if build is already Pro,
+            // otherwise "Continuar no Free" to dismiss the paywall.
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 Space.xl,
@@ -177,13 +189,7 @@ class PaywallScreen extends StatelessWidget {
                     : 'Continuar no Free',
                 variant: PigmentButtonVariant.ghost,
                 expand: true,
-                onPressed: () {
-                  if (PremiumConfig.current.isPremium) {
-                    onPurchaseSuccess?.call();
-                  } else {
-                    onClose?.call();
-                  }
-                },
+                onPressed: _onContinueTapped,
               ),
             ),
           ],

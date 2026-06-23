@@ -49,39 +49,59 @@ class PremiumConfig {
   /// (lock badges, banners, paywall routing).
   final bool isPremium;
 
+  // ---------- Tier limits ----------
+  //
+  // Constants live here so the rest of the app reads them from
+  // [current] without scattering magic numbers. Bumping the Pro
+  // caps only takes editing this file.
+
+  /// Free tier pigment count. Pro = all 12.
+  static const int _freePigmentCount = 4;
+
+  /// Free tier brush count (just roundSmall). Pro = all 6.
+  static const int _freeBrushCount = 1;
+
+  /// Free tier gallery capacity. Pro = unlimited (-1).
+  static const int _freeMaxSavedPaintings = 3;
+
+  /// Free tier session length (seconds). Pro = unlimited (-1).
+  static const int _freeMaxSessionSeconds = 30;
+
+  /// Free tier export resolution (longest side, px). Pro = 4096.
+  static const int _freeMaxExportPx = 1024;
+
   /// Maximum number of pigments the user can pick from the palette.
   /// Free: 4 brand colors. Pro: all 12.
-  int get maxPigments => isPremium ? 12 : 4;
+  int get maxPigments => isPremium ? PigmentId.values.length : _freePigmentCount;
 
   /// Brushes available to the tier. Free: round small only. Pro: all 6.
   List<BrushId> get availableBrushes => isPremium
       ? BrushId.values
-      : const [BrushId.roundSmall];
+      : BrushId.values.sublist(0, _freeBrushCount);
 
   /// How many saved paintings the gallery can hold. Free: 3, Pro: unlimited.
-  int get maxSavedPaintings => isPremium ? -1 : 3;
+  int get maxSavedPaintings =>
+      isPremium ? -1 : _freeMaxSavedPaintings;
 
   /// Maximum session length in seconds. Free: 30s, Pro: unlimited (-1).
-  int get maxSessionSeconds => isPremium ? -1 : 30;
+  int get maxSessionSeconds => isPremium ? -1 : _freeMaxSessionSeconds;
 
   /// Whether the PNG export carries a watermark. Pro: clean export.
   bool get exportWatermark => !isPremium;
 
-  /// Maximum export resolution. Free: 1024px, Pro: 4096px.
-  int get maxExportPx => isPremium ? 4096 : 1024;
+  /// Maximum export resolution (longest side, px). Free: 1024, Pro: 4096.
+  int get maxExportPx => isPremium ? 4096 : _freeMaxExportPx;
 
   /// Whether the AdMob banner is shown. Pro: ad-free.
   bool get showAds => !isPremium;
 
   /// Pro-only pigment IDs. Free users see a lock badge on these.
-  List<PigmentId> get lockedPigments => isPremium
-      ? const []
-      : PigmentId.values.sublist(maxPigments);
+  List<PigmentId> get lockedPigments =>
+      isPremium ? const [] : PigmentId.values.sublist(maxPigments);
 
   /// Pro-only brush IDs. Free users see a lock badge on these.
-  List<BrushId> get lockedBrushes => isPremium
-      ? const []
-      : BrushId.values.sublist(1);
+  List<BrushId> get lockedBrushes =>
+      isPremium ? const [] : BrushId.values.sublist(_freeBrushCount);
 
   /// Human-readable tier name for UI.
   String get tierName => isPremium ? 'Pro' : 'Free';

@@ -1,7 +1,10 @@
 import 'package:aquarela_watercolor_sketch/engine/pigment.dart';
+import 'package:aquarela_watercolor_sketch/features/paywall/paywall_screen.dart';
 import 'package:aquarela_watercolor_sketch/theme/components/lock_badge.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
-import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart' show BrandPigment;
+import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart'
+    show BrandPigment;
+import 'package:aquarela_watercolor_sketch/theme/tokens/radius.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/spacing.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/typography.dart';
 import 'package:flutter/material.dart';
@@ -37,14 +40,22 @@ class PaletteScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
-              'Pigmentos',
-              style: AquarelaTypography.headlineLarge.copyWith(
-                color: Paper.ink,
-                fontSize: 20,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Pigmentos',
+                  style: AquarelaTypography.headlineLarge.copyWith(
+                    color: Paper.ink,
+                    fontSize: 20,
+                  ),
+                ),
+                _TierBadge(),
+              ],
             ),
             const SizedBox(height: Space.md),
+            const _SelectedPigmentCard(),
+            const SizedBox(height: Space.lg),
             const _PigmentGrid(),
             const SizedBox(height: Space.lg),
             const _BrushControls(),
@@ -52,6 +63,116 @@ class PaletteScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Small badge showing the user's current tier (Free / Pro).
+class _TierBadge extends StatelessWidget {
+  const _TierBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final config = PremiumConfig.current;
+    final isPro = config.isPremium;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isPro
+            ? BrandPigment.cadmiumYellow.withValues(alpha: 0.2)
+            : Paper.cream,
+        borderRadius: BorderRadius.circular(RadiusToken.full),
+      ),
+      child: Text(
+        'Plano ${config.tierName}',
+        style: AquarelaTypography.caption.copyWith(
+          color: isPro ? Paper.ink : Paper.charcoal,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+/// Big card showing the currently selected pigment: name,
+/// characteristics, and a large color swatch.
+class _SelectedPigmentCard extends StatelessWidget {
+  const _SelectedPigmentCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CanvasCubit, CanvasState>(
+      buildWhen: (a, b) => a.currentPigment != b.currentPigment,
+      builder: (context, state) {
+        final p = Pigment.byId(state.currentPigment);
+        if (p == null) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.all(Space.md),
+          decoration: BoxDecoration(
+            color: Paper.cream,
+            borderRadius: BorderRadius.circular(RadiusToken.lg),
+            border: Border.all(
+              color: Paper.mist.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: p.color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Paper.ink.withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Paper.shadow(opacity: 0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      p.name,
+                      style: AquarelaTypography.headlineSmall.copyWith(
+                        color: Paper.ink,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _characteristics(p),
+                      style: AquarelaTypography.bodyMedium.copyWith(
+                        color: Paper.charcoal,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _characteristics(Pigment p) {
+    final parts = <String>[];
+    parts.add('Absorção ${(p.absorption * 100).round()}%');
+    if (p.granulation > 0) {
+      parts.add('Granulação ${(p.granulation * 100).round()}%');
+    }
+    return parts.join(' · ');
   }
 }
 
@@ -73,22 +194,33 @@ class _PigmentGrid extends StatelessWidget {
                 pigment: Pigment.curated[i],
                 isSelected: state.currentPigment == Pigment.curated[i].id,
                 isLocked: !config.isPremium && i >= config.maxPigments,
-                onTap: () {
-                  if (!config.isPremium && i >= config.maxPigments) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Pigmento Pro — upgrade no paywall'),
-                        backgroundColor: BrandPigment.cadmiumYellow,
-                      ),
-                    );
-                    return;
-                  }
-                  context.read<CanvasCubit>().setPigment(Pigment.curated[i].id);
-                },
+                onTap: () => _onPigmentTapped(context, i),
               ),
           ],
         );
       },
+    );
+  }
+
+  void _onPigmentTapped(BuildContext context, int index) {
+    final config = PremiumConfig.current;
+    final isLocked = !config.isPremium && index >= config.maxPigments;
+    if (isLocked) {
+      _openPaywallForLockedPigment(context);
+      return;
+    }
+    context.read<CanvasCubit>().setPigment(Pigment.curated[index].id);
+  }
+
+  void _openPaywallForLockedPigment(BuildContext context) {
+    // Open the paywall screen above the palette sheet.
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PaywallScreen(
+          onClose: () => Navigator.of(context).pop(),
+        ),
+        fullscreenDialog: true,
+      ),
     );
   }
 }
@@ -189,8 +321,7 @@ class _BrushControls extends StatelessWidget {
               value: state.currentBrush.waterRatio,
               min: 0,
               max: 1,
-              onChanged: (v) =>
-                  context.read<CanvasCubit>().setWaterRatio(v),
+              onChanged: (v) => context.read<CanvasCubit>().setWaterRatio(v),
             ),
             _SliderRow(
               icon: Icons.opacity_rounded,

@@ -66,9 +66,11 @@ void main() {
         existing: const [],
       );
       // Mean radius of wet stamps should be greater
-      final dryMean = dryStamps.map((s) => s.radius).reduce((a, b) => a + b) /
+      final dryMean =
+          dryStamps.map((s) => s.radius).reduce((a, b) => a + b) /
           dryStamps.length;
-      final wetMean = wetStamps.map((s) => s.radius).reduce((a, b) => a + b) /
+      final wetMean =
+          wetStamps.map((s) => s.radius).reduce((a, b) => a + b) /
           wetStamps.length;
       expect(wetMean, greaterThan(dryMean));
     });
@@ -109,7 +111,13 @@ void main() {
     test('is finalized on endStroke()', () {
       const stroke = Stroke(
         id: 's1',
-        brush: Brush(id: 'round_small', type: BrushType.round, size: 8, opacity: 0.9, waterRatio: 0.5),
+        brush: Brush(
+          id: 'round_small',
+          type: BrushType.round,
+          size: 8,
+          opacity: 0.9,
+          waterRatio: 0.5,
+        ),
         pigment: PigmentId.ultramar,
         path: [Offset.zero, Offset(10, 10)],
         stamps: [],

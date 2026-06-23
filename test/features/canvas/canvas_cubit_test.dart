@@ -5,14 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('CanvasCubit', () {
-    test('initial state has empty strokes + default ultramar + round brush',
-        () {
-      final cubit = CanvasCubit();
-      expect(cubit.state.strokes, isEmpty);
-      expect(cubit.state.currentPigment, PigmentId.ultramar);
-      expect(cubit.state.currentBrush.id, 'round_small');
-      expect(cubit.state.currentBrush.type, BrushType.round);
-    });
+    test(
+      'initial state has empty strokes + default ultramar + round brush',
+      () {
+        final cubit = CanvasCubit();
+        expect(cubit.state.strokes, isEmpty);
+        expect(cubit.state.currentPigment, PigmentId.ultramar);
+        expect(cubit.state.currentBrush.id, 'round_small');
+        expect(cubit.state.currentBrush.type, BrushType.round);
+      },
+    );
 
     test('startStroke initializes in-progress with a path of 1 point', () {
       final cubit = CanvasCubit();
