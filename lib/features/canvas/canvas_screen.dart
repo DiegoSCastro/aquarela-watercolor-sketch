@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -85,33 +86,11 @@ class _CanvasView extends StatelessWidget {
     }
 
     try {
-      // Capture the canvas as PNG bytes.
-      final boundary =
-          canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) {
-        throw StateError('Canvas repaint boundary not found');
+      final bytes = await _capturePng();
+      if (bytes == null) {
+        throw StateError('Falha ao capturar o canvas');
       }
-      final image = await boundary.toImage(pixelRatio: 2.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) {
-        throw StateError('Failed to encode canvas as PNG');
-      }
-      final bytes = byteData.buffer.asUint8List();
-
-      // Save to gallery.
-      await Gal.putImageBytes(bytes, name: 'aquarela_${DateTime.now().millisecondsSinceEpoch}');
-
-      // Also save a copy in app docs so it shows up in our gallery later.
-      final docs = await getApplicationDocumentsDirectory();
-      final galleryDir = Directory('${docs.path}/gallery');
-      if (!galleryDir.existsSync()) {
-        galleryDir.createSync(recursive: true);
-      }
-      final file = File(
-        '${galleryDir.path}/aquarela_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await file.writeAsBytes(bytes);
+      final savedFile = await _persistPng(bytes);
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,7 +102,7 @@ class _CanvasView extends StatelessWidget {
             textColor: Paper.white,
             onPressed: () => SharePlus.instance.share(
               ShareParams(
-                files: [XFile(file.path)],
+                files: [XFile(savedFile.path)],
                 text: 'Pintei no Aquarela',
               ),
             ),
@@ -135,10 +114,43 @@ class _CanvasView extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao salvar: $e'),
-          backgroundColor: Colors.red.shade700,
+          // Material error red — only used for transient save errors.
+          backgroundColor: Color(0xFFB00020),
         ),
       );
     }
+  }
+
+  /// Render the canvas at 2x to a PNG byte buffer. Returns null if
+  /// the repaint boundary is missing (e.g. widget unmounted mid-draw).
+  Future<Uint8List?> _capturePng() async {
+    final boundary =
+        canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return null;
+    final image = await boundary.toImage(pixelRatio: 2.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData?.buffer.asUint8List();
+  }
+
+  /// Save [bytes] to the system gallery and a copy in our app docs.
+  /// Returns the local app-docs file so the share action can pick
+  /// it up without re-reading the system gallery.
+  Future<File> _persistPng(Uint8List bytes) async {
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final fileName = 'aquarela_$ts';
+
+    // System gallery — visible to the user in Photos / Gallery apps.
+    await Gal.putImageBytes(bytes, name: fileName);
+
+    // App docs — our own gallery feature reads this directory.
+    final docs = await getApplicationDocumentsDirectory();
+    final galleryDir = Directory('${docs.path}/gallery');
+    if (!galleryDir.existsSync()) {
+      galleryDir.createSync(recursive: true);
+    }
+    final file = File('${galleryDir.path}/$fileName.png');
+    await file.writeAsBytes(bytes);
+    return file;
   }
 
   @override
@@ -269,7 +281,10 @@ class _CanvasTopBar extends StatelessWidget {
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: Paper.charcoal),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: Paper.charcoal,
+            ),
             onPressed: onClear,
             tooltip: 'Limpar',
           ),

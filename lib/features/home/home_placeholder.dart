@@ -34,41 +34,8 @@ class HomePlaceholder extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Olá, pintor',
-                        style: AquarelaTypography.headlineLarge.copyWith(
-                          color: Paper.ink,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isFree
-                              ? Paper.cream
-                              : BrandPigment.cadmiumYellow.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(RadiusToken.full),
-                        ),
-                        child: Text(
-                          'Plano ${config.tierName}',
-                          style: AquarelaTypography.caption.copyWith(
-                            color: isFree ? Paper.charcoal : Paper.ink,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_rounded, color: Paper.charcoal),
-                    onPressed: () {},
-                  ),
+                  _Greeting(isFree: isFree),
+                  const _SettingsButton(),
                 ],
               ),
 
@@ -77,21 +44,13 @@ class HomePlaceholder extends StatelessWidget {
               // Upgrade banner — free users only
               if (isFree)
                 UpgradeBanner(
-                  onUpgrade: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => PaywallScreen(
-                          onClose: () => Navigator.of(context).pop(),
-                        ),
-                      ),
-                    );
-                  },
+                  onUpgrade: () => _openPaywall(context),
                 ),
 
               if (isFree) const SizedBox(height: Space.xl),
 
               // Tier summary card
-              _TierSummaryCard(),
+              const _TierSummaryCard(),
 
               const Spacer(),
 
@@ -99,13 +58,7 @@ class HomePlaceholder extends StatelessWidget {
                 label: 'Começar a pintar',
                 icon: Icons.brush_outlined,
                 expand: true,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const CanvasScreen(),
-                    ),
-                  );
-                },
+                onPressed: () => _openCanvas(context),
               ),
               const SizedBox(height: Space.lg),
             ],
@@ -114,9 +67,96 @@ class HomePlaceholder extends StatelessWidget {
       ),
     );
   }
+
+  void _openPaywall(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PaywallScreen(
+          onClose: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
+
+  void _openCanvas(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const CanvasScreen(),
+      ),
+    );
+  }
+}
+
+class _Greeting extends StatelessWidget {
+  const _Greeting({required this.isFree});
+
+  final bool isFree;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = PremiumConfig.current;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Olá, pintor',
+          style: AquarelaTypography.headlineLarge.copyWith(
+            color: Paper.ink,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 3,
+          ),
+          decoration: BoxDecoration(
+            color: isFree
+                ? Paper.cream
+                : BrandPigment.cadmiumYellow.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(RadiusToken.full),
+          ),
+          child: Text(
+            'Plano ${config.tierName}',
+            style: AquarelaTypography.caption.copyWith(
+              color: isFree ? Paper.charcoal : Paper.ink,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Settings is a no-op in v1 — the app has no settings screen yet.
+/// The button stays visible so the layout is final, and the
+/// disabled state signals "coming soon" without a misleading CTA.
+class _SettingsButton extends StatelessWidget {
+  const _SettingsButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.settings_rounded, color: Paper.charcoal),
+      tooltip: 'Configurações (em breve)',
+      onPressed: () => _showComingSoon(context),
+    );
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Configurações chegando em breve'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 }
 
 class _TierSummaryCard extends StatelessWidget {
+  const _TierSummaryCard();
+
   @override
   Widget build(BuildContext context) {
     final config = PremiumConfig.current;
@@ -148,7 +188,7 @@ class _TierSummaryCard extends StatelessWidget {
             value: config.isPremium
                 ? '12 (todos)'
                 : '${config.maxPigments} de 12',
-            isLocked: !config.isPremium && config.maxPigments < 12,
+            isLocked: !config.isPremium,
           ),
           _LimitRow(
             icon: Icons.brush_outlined,
@@ -156,7 +196,7 @@ class _TierSummaryCard extends StatelessWidget {
             value: config.isPremium
                 ? '6 (todos)'
                 : '${config.availableBrushes.length} de 6',
-            isLocked: !config.isPremium && config.availableBrushes.length < 6,
+            isLocked: !config.isPremium,
           ),
           _LimitRow(
             icon: Icons.timer_outlined,
@@ -176,9 +216,9 @@ class _TierSummaryCard extends StatelessWidget {
           ),
           _LimitRow(
             icon: Icons.high_quality_outlined,
-            label: "Export",
+            label: 'Export',
             value: config.isPremium
-                ? "${config.maxExportPx}px HD"
+                ? '${config.maxExportPx}px HD'
                 : "${config.maxExportPx}px + marca d'água",
             isLocked: !config.isPremium,
           ),

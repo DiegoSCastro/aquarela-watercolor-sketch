@@ -135,16 +135,18 @@ class CanvasCubit extends Cubit<CanvasState> {
       _startSessionTimer();
     }
     final id = 's${_strokeCounter++}';
-    emit(state.copyWith(
-      inProgressStroke: Stroke(
-        id: id,
-        brush: state.currentBrush,
-        pigment: state.currentPigment,
-        path: [point],
-        stamps: const [],
-        createdAt: null,
+    emit(
+      state.copyWith(
+        inProgressStroke: Stroke(
+          id: id,
+          brush: state.currentBrush,
+          pigment: state.currentPigment,
+          path: [point],
+          stamps: const [],
+          createdAt: null,
+        ),
       ),
-    ));
+    );
   }
 
   void addPoint(Offset point) {
@@ -159,8 +161,10 @@ class CanvasCubit extends Cubit<CanvasState> {
     final current = state.inProgressStroke;
     if (current == null) return;
 
-    // Compute the final stamps for this stroke.
-    final pigment = _resolvePigment(current.pigment);
+    // Look up the pigment by id — Pigment.byId is the single
+    // source of truth (the previous manual switch drifted when
+    // new pigments were added and would silently miss them).
+    final pigment = Pigment.byId(current.pigment);
     if (pigment == null) return; // unknown pigment, skip
 
     final stamps = PigmentEngine.stroke(
@@ -175,22 +179,36 @@ class CanvasCubit extends Cubit<CanvasState> {
       createdAt: DateTime.now(),
     );
 
-    // Cap at 2000 strokes for Pro, 200 for Free to keep paint fast.
-    final cap = PremiumConfig.current.isPremium ? 2000 : 200;
+    // Drop the oldest strokes past the tier cap so the painter
+    // stays cheap regardless of how long the user paints.
     final updatedStrokes = [...state.strokes, finalized];
-    final trimmed = updatedStrokes.length > cap
-        ? updatedStrokes.sublist(updatedStrokes.length - cap)
+    final trimmed = updatedStrokes.length > _maxStrokes
+        ? updatedStrokes.sublist(updatedStrokes.length - _maxStrokes)
         : updatedStrokes;
 
-    emit(state.copyWith(
-      strokes: trimmed,
-      clearInProgress: true,
-    ));
+    emit(
+      state.copyWith(
+        strokes: trimmed,
+        clearInProgress: true,
+      ),
+    );
   }
 
   void clear() {
     emit(state.copyWith(strokes: const [], clearInProgress: true));
   }
+
+  // Maximum number of strokes kept in memory. Older strokes are
+  // dropped past the cap to keep the painter cheap on weaker
+  // devices. Tuned by tier.
+  int get _maxStrokes => isPremium ? 2000 : 200;
+
+  bool get isPremium => PremiumConfig.current.isPremium;
+
+  // Minimum elapsed tick (ms) before we count it as a real second
+  // boundary. At 60Hz a ticker fires ~16ms; without this gate we'd
+  // emit 60 state updates per second, flooding the UI.
+  static const _tickIntervalMs = 900;
 
   // ---------- Session timer ----------
 
@@ -212,38 +230,21 @@ class CanvasCubit extends Cubit<CanvasState> {
 
     final delta = elapsed - _previousTick;
     _previousTick = elapsed;
-    if (delta.inMilliseconds < 900) return; // only fire on ~1s boundaries
+    if (delta.inMilliseconds < _tickIntervalMs) return;
 
     _elapsedSeconds += 1;
     final remaining = max - _elapsedSeconds;
     if (remaining <= 0) {
       _timerActive = false;
-      emit(state.copyWith(
-        sessionSecondsRemaining: 0,
-        strokes: const [],
-        clearInProgress: true,
-      ));
+      emit(
+        state.copyWith(
+          sessionSecondsRemaining: 0,
+          strokes: const [],
+          clearInProgress: true,
+        ),
+      );
     } else {
       emit(state.copyWith(sessionSecondsRemaining: remaining));
     }
-  }
-
-  // ---------- Helpers ----------
-
-  Pigment? _resolvePigment(PigmentId id) {
-    return switch (id) {
-      PigmentId.ultramar => Pigment.ultramar,
-      PigmentId.burntSienna => Pigment.burntSienna,
-      PigmentId.cadmiumYellow => Pigment.cadmiumYellow,
-      PigmentId.paynesGray => Pigment.paynesGray,
-      PigmentId.viridian => Pigment.viridian,
-      PigmentId.alizarinCrimson => Pigment.alizarinCrimson,
-      PigmentId.cerulean => Pigment.cerulean,
-      PigmentId.lemonYellow => Pigment.lemonYellow,
-      PigmentId.roseMadder => Pigment.roseMadder,
-      PigmentId.sapGreen => Pigment.sapGreen,
-      PigmentId.indigo => Pigment.indigo,
-      PigmentId.sepia => Pigment.sepia,
-    };
   }
 }
