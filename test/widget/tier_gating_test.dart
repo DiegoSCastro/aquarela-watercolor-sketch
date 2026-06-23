@@ -25,8 +25,7 @@ void main() {
       expect(find.text('Conhecer Pro'), findsOneWidget);
     });
 
-    testWidgets('shows 4-of-12 pigments and 1-of-6 brushes',
-        (tester) async {
+    testWidgets('shows 4-of-12 pigments and 1-of-6 brushes', (tester) async {
       await _pump(tester, const HomePlaceholder());
       await tester.pumpAndSettle();
       expect(find.text('4 de 12'), findsOneWidget);
@@ -52,8 +51,7 @@ void main() {
     setUp(() => PremiumConfig.overrideForTest(isPremium: false));
     tearDown(PremiumConfig.resetForTest);
 
-    testWidgets('shows both tier cards and continue-free CTA',
-        (tester) async {
+    testWidgets('shows both tier cards and continue-free CTA', (tester) async {
       await _pump(tester, const PaywallScreen());
       await tester.pumpAndSettle();
       expect(find.text('Aquarela Pro'), findsOneWidget);
@@ -63,16 +61,14 @@ void main() {
       expect(find.text('Restaurar compras'), findsOneWidget);
     });
 
-    testWidgets('hides close button when onClose is null',
-        (tester) async {
+    testWidgets('hides close button when onClose is null', (tester) async {
       await _pump(tester, const PaywallScreen());
       await tester.pumpAndSettle();
       // No close icon in the top bar
       expect(find.byIcon(Icons.close_rounded), findsNothing);
     });
 
-    testWidgets('shows close button when onClose is provided',
-        (tester) async {
+    testWidgets('shows close button when onClose is provided', (tester) async {
       await _pump(
         tester,
         PaywallScreen(onClose: () {}),

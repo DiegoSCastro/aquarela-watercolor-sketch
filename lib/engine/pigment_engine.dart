@@ -53,12 +53,14 @@ class PigmentEngine {
       final p = path[i];
 
       // Center stamp (always full size, no jitter).
-      stamps.add(Stamp(
-        offset: p,
-        radius: baseRadius,
-        color: pigment.color,
-        alpha: brush.opacity,
-      ));
+      stamps.add(
+        Stamp(
+          offset: p,
+          radius: baseRadius,
+          color: pigment.color,
+          alpha: brush.opacity,
+        ),
+      );
 
       // Bleed sub-stamps: small offsets and slightly different
       // radii, for organic edges. Number of sub-stamps scales with
@@ -72,12 +74,14 @@ class PigmentEngine {
         final subRadius = baseRadius * (0.3 + random.nextDouble() * 0.4);
         final subAlpha = brush.opacity * (0.3 + random.nextDouble() * 0.4);
 
-        stamps.add(Stamp(
-          offset: p + Offset(dx, dy),
-          radius: subRadius,
-          color: pigment.color,
-          alpha: subAlpha,
-        ));
+        stamps.add(
+          Stamp(
+            offset: p + Offset(dx, dy),
+            radius: subRadius,
+            color: pigment.color,
+            alpha: subAlpha,
+          ),
+        );
       }
     }
 

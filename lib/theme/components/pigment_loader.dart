@@ -4,7 +4,11 @@ import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart';
 
 /// Three pulsing dots in ultramar — for "thinking" / "loading" states.
 class PigmentLoader extends StatefulWidget {
-  const PigmentLoader({this.size = 8, this.color = BrandPigment.ultramar, super.key});
+  const PigmentLoader({
+    this.size = 8,
+    this.color = BrandPigment.ultramar,
+    super.key,
+  });
 
   final double size;
   final Color color;

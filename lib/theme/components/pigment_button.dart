@@ -65,12 +65,12 @@ class _PigmentButtonState extends State<PigmentButton> {
         duration: Motion.quick,
         curve: Motion.wet,
         decoration: BoxDecoration(
-          color: isDisabled
-              ? bg.withValues(alpha: 0.4)
-              : bg,
+          color: isDisabled ? bg.withValues(alpha: 0.4) : bg,
           borderRadius: BorderRadius.circular(RadiusToken.md),
           boxShadow: widget.variant == PigmentButtonVariant.primary
-              ? (_pressed ? AquarelaShadow.paper2List : AquarelaShadow.paper1List)
+              ? (_pressed
+                    ? AquarelaShadow.paper2List
+                    : AquarelaShadow.paper1List)
               : null,
         ),
         child: Material(

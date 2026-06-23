@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:aquarela_watercolor_sketch/main.dart' show navigateAfterOnboarding;
+import 'package:aquarela_watercolor_sketch/main.dart'
+    show navigateAfterOnboarding;
 import 'package:aquarela_watercolor_sketch/theme/components/pigment_button.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/motion.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
@@ -33,17 +34,20 @@ class _OnboardingView extends StatelessWidget {
     _OnboardingSlide(
       illustration: Slide1PocketIllustration(),
       title: 'Aquarela no seu bolso',
-      subtitle: 'Pinte com pigmentos que sangram, escorrem e secam — como na vida real.',
+      subtitle:
+          'Pinte com pigmentos que sangram, escorrem e secam — como na vida real.',
     ),
     _OnboardingSlide(
       illustration: Slide2BleedIllustration(),
       title: 'Pigmento que respira',
-      subtitle: 'Cada cor carrega sua própria personalidade. Molhe o pincel, solte o controle.',
+      subtitle:
+          'Cada cor carrega sua própria personalidade. Molhe o pincel, solte o controle.',
     ),
     _OnboardingSlide(
       illustration: Slide3GalleryIllustration(),
       title: 'Suas obras, guardadas',
-      subtitle: 'Salve em alta resolução e compartilhe com o mundo. Suas pinturas ficam no seu celular.',
+      subtitle:
+          'Salve em alta resolução e compartilhe com o mundo. Suas pinturas ficam no seu celular.',
     ),
   ];
 
@@ -67,9 +71,9 @@ class _OnboardingView extends StatelessWidget {
                     children: [
                       if (page < OnboardingCubit.totalPages - 1)
                         TextButton(
-                          onPressed: () => context
-                              .read<OnboardingCubit>()
-                              .goTo(OnboardingCubit.totalPages - 1),
+                          onPressed: () => context.read<OnboardingCubit>().goTo(
+                            OnboardingCubit.totalPages - 1,
+                          ),
                           child: Text(
                             'Pular',
                             style: AquarelaTypography.caption.copyWith(
@@ -117,7 +121,10 @@ class _OnboardingView extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      _PageIndicator(current: page, total: OnboardingCubit.totalPages),
+                      _PageIndicator(
+                        current: page,
+                        total: OnboardingCubit.totalPages,
+                      ),
                       const SizedBox(height: Space.xl),
                       PigmentButton(
                         label: page == OnboardingCubit.totalPages - 1
@@ -212,7 +219,9 @@ class _PageIndicator extends StatelessWidget {
           height: 8,
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: isActive ? BrandPigment.ultramar : Paper.mist.withValues(alpha: 0.4),
+            color: isActive
+                ? BrandPigment.ultramar
+                : Paper.mist.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(4),
           ),
         );

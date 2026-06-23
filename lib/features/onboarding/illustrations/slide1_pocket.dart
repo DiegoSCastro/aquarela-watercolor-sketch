@@ -61,12 +61,15 @@ class _Slide1Painter extends CustomPainter {
 
     // === Pigment INSIDE screen — generous gradients ===
     final innerPigment1 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          BrandPigment.ultramar,
-          BrandPigment.ultramar.withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromCircle(center: const Offset(-12, -12), radius: 32))
+      ..shader =
+          RadialGradient(
+            colors: [
+              BrandPigment.ultramar,
+              BrandPigment.ultramar.withValues(alpha: 0.0),
+            ],
+          ).createShader(
+            Rect.fromCircle(center: const Offset(-12, -12), radius: 32),
+          )
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
     canvas.drawCircle(const Offset(-12, -12), 35, innerPigment1);
 

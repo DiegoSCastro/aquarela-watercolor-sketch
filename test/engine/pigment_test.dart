@@ -11,14 +11,21 @@ void main() {
     test('all curated pigments have valid ARGB color', () {
       for (final p in Pigment.curated) {
         // toARGB32 returns 0xAARRGGBB, must be non-zero alpha
-        expect(p.color.toARGB32() & 0xFF000000, 0xFF000000,
-            reason: '${p.name} must have full alpha');
+        expect(
+          p.color.toARGB32() & 0xFF000000,
+          0xFF000000,
+          reason: '${p.name} must have full alpha',
+        );
       }
     });
 
     test('all curated pigments have non-empty name', () {
       for (final p in Pigment.curated) {
-        expect(p.name.isNotEmpty, isTrue, reason: 'Pigment ${p.id} missing name');
+        expect(
+          p.name.isNotEmpty,
+          isTrue,
+          reason: 'Pigment ${p.id} missing name',
+        );
       }
     });
 
@@ -30,10 +37,12 @@ void main() {
     });
 
     test('darker pigments have higher absorption than lighter ones', () {
-      final cadmium = Pigment.curated
-          .firstWhere((p) => p.id == PigmentId.cadmiumYellow);
-      final paynes = Pigment.curated
-          .firstWhere((p) => p.id == PigmentId.paynesGray);
+      final cadmium = Pigment.curated.firstWhere(
+        (p) => p.id == PigmentId.cadmiumYellow,
+      );
+      final paynes = Pigment.curated.firstWhere(
+        (p) => p.id == PigmentId.paynesGray,
+      );
       expect(paynes.absorption, greaterThan(cadmium.absorption));
     });
 
@@ -63,12 +72,15 @@ void main() {
           .where((p) => p.granulation > 0)
           .map((p) => p.id)
           .toSet();
-      expect(granulating, containsAll([
-        PigmentId.burntSienna,
-        PigmentId.viridian,
-        PigmentId.cerulean,
-        PigmentId.sepia,
-      ]));
+      expect(
+        granulating,
+        containsAll([
+          PigmentId.burntSienna,
+          PigmentId.viridian,
+          PigmentId.cerulean,
+          PigmentId.sepia,
+        ]),
+      );
     });
 
     test('lightest pigment is lemon yellow (lowest absorption)', () {

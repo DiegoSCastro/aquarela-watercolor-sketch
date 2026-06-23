@@ -89,7 +89,11 @@ class _Slide2Painter extends CustomPainter {
       final r = coreRadius * (0.85 + rng.nextDouble() * 0.15);
       final x = math.cos(angle) * r;
       final y = math.sin(angle) * r;
-      canvas.drawCircle(center + Offset(x, y), 2.5 + rng.nextDouble() * 2, poolingPaint);
+      canvas.drawCircle(
+        center + Offset(x, y),
+        2.5 + rng.nextDouble() * 2,
+        poolingPaint,
+      );
     }
 
     // === Cauliflowers — small organic blebs spreading outward (asymmetric positions) ===
@@ -120,8 +124,18 @@ class _Slide2Painter extends CustomPainter {
     ]) {
       final dropPath = Path();
       dropPath.moveTo(drop.dx, drop.dy - 10);
-      dropPath.quadraticBezierTo(drop.dx - 6, drop.dy + 4, drop.dx, drop.dy + 7);
-      dropPath.quadraticBezierTo(drop.dx + 6, drop.dy + 4, drop.dx, drop.dy - 10);
+      dropPath.quadraticBezierTo(
+        drop.dx - 6,
+        drop.dy + 4,
+        drop.dx,
+        drop.dy + 7,
+      );
+      dropPath.quadraticBezierTo(
+        drop.dx + 6,
+        drop.dy + 4,
+        drop.dx,
+        drop.dy - 10,
+      );
       dropPath.close();
       canvas.drawPath(dropPath, waterPaint);
     }

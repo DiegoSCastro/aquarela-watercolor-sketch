@@ -95,5 +95,6 @@ class AquarelaTypography {
   );
 
   /// Accent color override for selected/highlighted text.
-  static TextStyle accent(TextStyle base) => base.copyWith(color: BrandPigment.ultramar);
+  static TextStyle accent(TextStyle base) =>
+      base.copyWith(color: BrandPigment.ultramar);
 }
