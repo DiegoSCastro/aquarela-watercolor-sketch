@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart';
 
 /// Typography — Lora (display serif) + Inter (UI sans).
 /// Lora evokes the artist's notebook; Inter handles functional UI.
+///
+/// Fonts are bundled locally as variable TTF (one file covers all weights).
 class AquarelaTypography {
   const AquarelaTypography._();
 
+  static const String _displayFamily = 'Lora';
+  static const String _uiFamily = 'Inter';
+
   /// Display 56 / Lora 500 — splash, hero titles.
-  static TextStyle displayLarge = GoogleFonts.lora(
+  static const TextStyle displayLarge = TextStyle(
+    fontFamily: _displayFamily,
     fontSize: 56.0,
     fontWeight: FontWeight.w500,
     height: 1.1,
@@ -19,7 +24,8 @@ class AquarelaTypography {
   );
 
   /// Display 40 / Lora 500 — onboarding titles.
-  static TextStyle displayMedium = GoogleFonts.lora(
+  static const TextStyle displayMedium = TextStyle(
+    fontFamily: _displayFamily,
     fontSize: 40,
     fontWeight: FontWeight.w500,
     height: 1.15,
@@ -28,7 +34,8 @@ class AquarelaTypography {
   );
 
   /// Display 32 / Lora 500 — section heads.
-  static TextStyle displaySmall = GoogleFonts.lora(
+  static const TextStyle displaySmall = TextStyle(
+    fontFamily: _displayFamily,
     fontSize: 32,
     fontWeight: FontWeight.w500,
     height: 1.2,
@@ -37,7 +44,8 @@ class AquarelaTypography {
   );
 
   /// Headline 24 / Inter 600 — feature highlights.
-  static TextStyle headlineLarge = GoogleFonts.inter(
+  static const TextStyle headlineLarge = TextStyle(
+    fontFamily: _uiFamily,
     fontSize: 24,
     fontWeight: FontWeight.w600,
     height: 1.25,
@@ -45,7 +53,8 @@ class AquarelaTypography {
   );
 
   /// Headline 20 / Inter 600 — card titles.
-  static TextStyle headlineSmall = GoogleFonts.inter(
+  static const TextStyle headlineSmall = TextStyle(
+    fontFamily: _uiFamily,
     fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 1.3,
@@ -53,7 +62,8 @@ class AquarelaTypography {
   );
 
   /// Subhead 18 / Inter 500 — emphasized body.
-  static TextStyle subhead = GoogleFonts.inter(
+  static const TextStyle subhead = TextStyle(
+    fontFamily: _uiFamily,
     fontSize: 18,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -61,7 +71,8 @@ class AquarelaTypography {
   );
 
   /// Body 16 / Inter 400 — default body text.
-  static TextStyle bodyLarge = GoogleFonts.inter(
+  static const TextStyle bodyLarge = TextStyle(
+    fontFamily: _uiFamily,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -69,7 +80,8 @@ class AquarelaTypography {
   );
 
   /// Body 14 / Inter 400 — secondary body.
-  static TextStyle bodyMedium = GoogleFonts.inter(
+  static const TextStyle bodyMedium = TextStyle(
+    fontFamily: _uiFamily,
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -77,7 +89,8 @@ class AquarelaTypography {
   );
 
   /// Button 16 / Inter 600 — CTA labels.
-  static TextStyle button = GoogleFonts.inter(
+  static const TextStyle button = TextStyle(
+    fontFamily: _uiFamily,
     fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.2,
@@ -86,7 +99,8 @@ class AquarelaTypography {
   );
 
   /// Caption 12 / Inter 500 — labels, metadata.
-  static TextStyle caption = GoogleFonts.inter(
+  static const TextStyle caption = TextStyle(
+    fontFamily: _uiFamily,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.4,
