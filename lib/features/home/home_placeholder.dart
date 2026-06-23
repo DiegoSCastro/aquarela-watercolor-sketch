@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:aquarela_watercolor_sketch/config/premium_config.dart';
 import 'package:aquarela_watercolor_sketch/features/canvas/canvas_screen.dart';
+import 'package:aquarela_watercolor_sketch/features/gallery/gallery_screen.dart';
 import 'package:aquarela_watercolor_sketch/features/paywall/paywall_screen.dart';
 import 'package:aquarela_watercolor_sketch/theme/components/lock_badge.dart';
 import 'package:aquarela_watercolor_sketch/theme/components/pigment_button.dart';
@@ -41,18 +42,37 @@ class HomePlaceholder extends StatelessWidget {
 
               const SizedBox(height: Space.xl),
 
-              // Upgrade banner — free users only
-              if (isFree)
-                UpgradeBanner(
-                  onUpgrade: () => _openPaywall(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Upgrade banner — free users only
+                      if (isFree)
+                        UpgradeBanner(
+                          onUpgrade: () => _openPaywall(context),
+                        ),
+
+                      if (isFree) const SizedBox(height: Space.xl),
+
+                      // Tier summary card
+                      const _TierSummaryCard(),
+
+                      const SizedBox(height: Space.md),
+
+                      PigmentButton(
+                        label: 'Ver galeria',
+                        icon: Icons.photo_library_outlined,
+                        variant: PigmentButtonVariant.ghost,
+                        expand: true,
+                        onPressed: () => _openGallery(context),
+                      ),
+                    ],
+                  ),
                 ),
+              ),
 
-              if (isFree) const SizedBox(height: Space.xl),
-
-              // Tier summary card
-              const _TierSummaryCard(),
-
-              const Spacer(),
+              const SizedBox(height: Space.lg),
 
               PigmentButton(
                 label: 'Começar a pintar',
@@ -74,6 +94,14 @@ class HomePlaceholder extends StatelessWidget {
         builder: (_) => PaywallScreen(
           onClose: () => Navigator.of(context).pop(),
         ),
+      ),
+    );
+  }
+
+  void _openGallery(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const GalleryScreen(),
       ),
     );
   }
