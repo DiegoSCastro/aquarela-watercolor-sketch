@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
-import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart';
+import '../../../theme/tokens/paper.dart';
+import '../../../theme/tokens/pigment.dart';
 
 /// Slide 1: Aquarela no seu bolso.
 /// Hand-drawn palm + phone with pigment bleeding OUT of the screen onto paper.
-/// No box frame — the illustration bleeds onto the paper background.
 class Slide1PocketIllustration extends StatelessWidget {
   const Slide1PocketIllustration({super.key});
 
@@ -24,7 +23,7 @@ class _Slide1Painter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // === Watercolor stroke that bleeds BEHIND the phone (yellow→sienna) ===
+    // === Background watercolor stroke behind the phone ===
     final bgStrokePaint = Paint()
       ..shader = LinearGradient(
         colors: [Pigment.cadmiumYellow, Pigment.burntSienna],
@@ -41,7 +40,7 @@ class _Slide1Painter extends CustomPainter {
     bgPath.close();
     canvas.drawPath(bgPath, bgStrokePaint);
 
-    // === Phone (ultramar) — slightly tilted ===
+    // === Phone tilted ===
     canvas.save();
     canvas.translate(w * 0.55, h * 0.5);
     canvas.rotate(-0.08);
@@ -53,7 +52,6 @@ class _Slide1Painter extends CustomPainter {
     );
     canvas.drawRRect(phoneBody, phonePaint);
 
-    // Screen (paper white) — the "canvas" inside
     final screenPaint = Paint()..color = Paper.white;
     final screenRect = RRect.fromRectAndRadius(
       Rect.fromCenter(center: Offset.zero, width: w * 0.27, height: h * 0.42),
@@ -61,16 +59,16 @@ class _Slide1Painter extends CustomPainter {
     );
     canvas.drawRRect(screenRect, screenPaint);
 
-    // Pigment splash INSIDE the screen (filling more)
+    // === Pigment INSIDE screen — generous gradients ===
     final innerPigment1 = Paint()
       ..shader = RadialGradient(
         colors: [
           Pigment.ultramar,
           Pigment.ultramar.withValues(alpha: 0.0),
         ],
-      ).createShader(Rect.fromCircle(center: const Offset(-0.04, -0.04), radius: 0.10))
+      ).createShader(Rect.fromCircle(center: const Offset(-12, -12), radius: 32))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawCircle(Offset(-w * 0.04, -h * 0.04), 35, innerPigment1);
+    canvas.drawCircle(const Offset(-12, -12), 35, innerPigment1);
 
     final innerPigment2 = Paint()
       ..shader = RadialGradient(
@@ -78,20 +76,20 @@ class _Slide1Painter extends CustomPainter {
           Pigment.burntSienna,
           Pigment.burntSienna.withValues(alpha: 0.0),
         ],
-      ).createShader(Rect.fromCircle(center: const Offset(0.04, 0.05), radius: 0.08))
+      ).createShader(Rect.fromCircle(center: const Offset(12, 15), radius: 25))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-    canvas.drawCircle(Offset(w * 0.04, h * 0.05), 25, innerPigment2);
+    canvas.drawCircle(const Offset(12, 15), 25, innerPigment2);
 
     final innerPigment3 = Paint()
       ..color = Pigment.cadmiumYellow.withValues(alpha: 0.6)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-    canvas.drawCircle(Offset(0, -h * 0.08), 14, innerPigment3);
+    canvas.drawCircle(const Offset(0, -25), 14, innerPigment3);
 
     // Notch
     final notchPaint = Paint()..color = Pigment.ultramar;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(0, -h * 0.22), width: w * 0.10, height: 4),
+        Rect.fromCenter(center: const Offset(0, -70), width: 32, height: 4),
         const Radius.circular(4),
       ),
       notchPaint,
@@ -99,9 +97,9 @@ class _Slide1Painter extends CustomPainter {
 
     canvas.restore();
 
-    // === Foreground pigment stroke bleeding OUT of the top of the phone ===
+    // === Pigment bleeding OUT of the top of phone ===
     final outStrokePaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
         colors: [Pigment.ultramar, Pigment.cadmiumYellow],
@@ -116,7 +114,6 @@ class _Slide1Painter extends CustomPainter {
     outPath.close();
     canvas.drawPath(outPath, outStrokePaint);
 
-    // Small drops above the phone
     for (final drop in [
       Offset(w * 0.18, h * 0.05),
       Offset(w * 0.30, h * 0.08),
@@ -125,20 +122,19 @@ class _Slide1Painter extends CustomPainter {
       canvas.drawCircle(drop, 4, outStrokePaint);
     }
 
-    // === Hand: stylized palm emerging from bottom — skin tone (burnt sienna diluted) ===
+    // === Hand: skin tone, clearly drawn ===
     final handPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFFB8835E), // light skin tone
+          const Color(0xFFB8835E),
           Pigment.burntSienna.withValues(alpha: 0.7),
         ],
       ).createShader(Rect.fromLTWH(0, h * 0.6, w, h * 0.4))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);
 
     final handPath = Path();
-    // Palm curve coming from bottom-right
     handPath.moveTo(w * 0.30, h * 1.02);
     handPath.quadraticBezierTo(w * 0.22, h * 0.82, w * 0.32, h * 0.72);
     handPath.quadraticBezierTo(w * 0.50, h * 0.66, w * 0.68, h * 0.74);
@@ -146,7 +142,7 @@ class _Slide1Painter extends CustomPainter {
     handPath.close();
     canvas.drawPath(handPath, handPaint);
 
-    // 4 finger ridges — clearly visible as soft rounded shapes
+    // 4 finger ridges
     final fingerPaint = Paint()
       ..color = const Color(0xFFA07248).withValues(alpha: 0.85)
       ..style = PaintingStyle.fill;
@@ -160,7 +156,7 @@ class _Slide1Painter extends CustomPainter {
       canvas.drawRRect(finger, fingerPaint);
     }
 
-    // Thumb — sticks out to the left side
+    // Thumb
     final thumbPaint = Paint()
       ..color = const Color(0xFFA07248).withValues(alpha: 0.85);
     final thumbPath = Path();

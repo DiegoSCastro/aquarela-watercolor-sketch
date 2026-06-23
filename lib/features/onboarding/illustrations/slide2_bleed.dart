@@ -105,8 +105,8 @@ class _Slide2Painter extends CustomPainter {
     ];
     for (final c in cauliflowers) {
       canvas.drawCircle(c, 5, cauliflowerPaint);
-      canvas.drawCircle(c + Offset(8, 3), 2.5, cauliflowerPaint);
-      canvas.drawCircle(c + Offset(-5, 6), 3, cauliflowerPaint);
+      canvas.drawCircle(c + const Offset(8, 3), 2.5, cauliflowerPaint);
+      canvas.drawCircle(c + const Offset(-5, 6), 3, cauliflowerPaint);
     }
 
     // === Water drops above — yellow with elongated teardrop shape ===
