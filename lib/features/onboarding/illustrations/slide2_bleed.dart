@@ -36,7 +36,7 @@ class _Slide2Painter extends CustomPainter {
 
     for (final halo in halos) {
       final paint = Paint()
-        ..color = Pigment.ultramar.withValues(alpha: halo.opacity)
+        ..color = BrandPigment.ultramar.withValues(alpha: halo.opacity)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, halo.blur);
       canvas.drawCircle(center + halo.offset, halo.radius, paint);
     }
@@ -61,7 +61,7 @@ class _Slide2Painter extends CustomPainter {
     final corePaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          Pigment.burntSienna,
+          BrandPigment.burntSienna,
           const Color(0xFF6B3F26),
         ],
       ).createShader(Rect.fromCircle(center: center, radius: coreRadius));
@@ -94,7 +94,7 @@ class _Slide2Painter extends CustomPainter {
 
     // === Cauliflowers — small organic blebs spreading outward (asymmetric positions) ===
     final cauliflowerPaint = Paint()
-      ..color = Pigment.ultramar.withValues(alpha: 0.3)
+      ..color = BrandPigment.ultramar.withValues(alpha: 0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
     final cauliflowers = [
@@ -111,7 +111,7 @@ class _Slide2Painter extends CustomPainter {
 
     // === Water drops above — yellow with elongated teardrop shape ===
     final waterPaint = Paint()
-      ..color = Pigment.cadmiumYellow.withValues(alpha: 0.85)
+      ..color = BrandPigment.cadmiumYellow.withValues(alpha: 0.85)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1);
 
     for (final drop in [

@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 
 /// Core brand pigments — 4 colors that define Aquarela's identity.
 /// These are real watercolor pigment names with their canonical hex values.
-class Pigment {
-  const Pigment._();
+///
+/// Different from the curated 12-pigment user palette in
+/// `lib/engine/pigment.dart` — these are the brand identity colors
+/// used in the UI (CTAs, indicators, etc.).
+class BrandPigment {
+  const BrandPigment._();
 
   /// #1E3A8A — Ultramarine (lapis lazuli). Primary accent, CTAs.
   static const Color ultramar = Color(0xFF1E3A8A);

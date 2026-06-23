@@ -12,6 +12,11 @@
 /// directly — so tests can flip the tier without rebuilding.
 library;
 
+import 'package:aquarela_watercolor_sketch/config/palette_ids.dart';
+
+export 'package:aquarela_watercolor_sketch/config/palette_ids.dart'
+    show BrushId, PigmentId;
+
 /// Build-time premium flag. Defaults to free so the open-source build
 /// is always a free build, and so a developer who forgets the
 /// `--dart-define` doesn't accidentally ship a Pro build.
@@ -32,34 +37,6 @@ const String kStartAt = String.fromEnvironment(
   'START_AT',
   defaultValue: 'onboarding',
 );
-
-/// Pigment identifiers for the curated palette. Kept as a plain enum
-/// (not a Color object) so this file stays pure-Dart and testable
-/// without Flutter bindings.
-enum PigmentId {
-  ultramar,
-  burntSienna,
-  cadmiumYellow,
-  paynesGray,
-  viridian,
-  alizarinCrimson,
-  cerulean,
-  lemonYellow,
-  roseMadder,
-  sapGreen,
-  indigo,
-  sepia,
-}
-
-/// Brush identifiers — the round/small brush is the only free one.
-enum BrushId {
-  roundSmall,
-  roundMedium,
-  roundLarge,
-  flat,
-  fan,
-  mop,
-}
 
 /// Tier-specific limits. Read via [PremiumConfig.current].
 class PremiumConfig {
@@ -105,10 +82,6 @@ class PremiumConfig {
   List<BrushId> get lockedBrushes => isPremium
       ? const []
       : BrushId.values.sublist(1);
-
-/// All pigments are usable, regardless of tier. Free users only
-  /// see 4 unlocked, but the model is the same.
-  List<PigmentId> get allPigments => PigmentId.values;
 
   /// Human-readable tier name for UI.
   String get tierName => isPremium ? 'Pro' : 'Free';

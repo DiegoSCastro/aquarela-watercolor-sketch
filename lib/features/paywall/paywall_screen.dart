@@ -34,7 +34,7 @@ class PaywallScreen extends StatelessWidget {
           'Compra do $tier chegando no PR 4.x (Billing)',
           style: AquarelaTypography.bodyMedium.copyWith(color: Paper.white),
         ),
-        backgroundColor: Pigment.ultramar,
+        backgroundColor: BrandPigment.ultramar,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(RadiusToken.md),
@@ -82,13 +82,13 @@ class PaywallScreen extends StatelessWidget {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: Pigment.ultramar.withValues(alpha: 0.08),
+                        color: BrandPigment.ultramar.withValues(alpha: 0.08),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.brush_rounded,
                         size: 36,
-                        color: Pigment.ultramar,
+                        color: BrandPigment.ultramar,
                       ),
                     ),
                     const SizedBox(height: Space.lg),
@@ -111,7 +111,7 @@ class PaywallScreen extends StatelessWidget {
 
                     // Tier 1 — Pro (full app)
                     _TierCard(
-                      accent: Pigment.ultramar,
+                      accent: BrandPigment.ultramar,
                       badge: 'Recomendado',
                       title: 'Pro',
                       price: r'R$ 14,90',
@@ -130,7 +130,7 @@ class PaywallScreen extends StatelessWidget {
 
                     // Tier 2 — Palette Pack (additive, cheaper)
                     _TierCard(
-                      accent: Pigment.burntSienna,
+                      accent: BrandPigment.burntSienna,
                       badge: 'Compacto',
                       title: 'Palette Pack',
                       price: r'R$ 9,90',
@@ -152,7 +152,7 @@ class PaywallScreen extends StatelessWidget {
                       child: Text(
                         'Restaurar compras',
                         style: AquarelaTypography.bodyMedium.copyWith(
-                          color: Pigment.ultramar,
+                          color: BrandPigment.ultramar,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

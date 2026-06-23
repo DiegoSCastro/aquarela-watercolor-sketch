@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:aquarela_watercolor_sketch/config/premium_config.dart';
+import 'package:aquarela_watercolor_sketch/features/canvas/canvas_screen.dart';
 import 'package:aquarela_watercolor_sketch/features/paywall/paywall_screen.dart';
 import 'package:aquarela_watercolor_sketch/theme/components/lock_badge.dart';
 import 'package:aquarela_watercolor_sketch/theme/components/pigment_button.dart';
@@ -51,7 +52,7 @@ class HomePlaceholder extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isFree
                               ? Paper.cream
-                              : Pigment.cadmiumYellow.withValues(alpha: 0.2),
+                              : BrandPigment.cadmiumYellow.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(RadiusToken.full),
                         ),
                         child: Text(
@@ -99,18 +100,9 @@ class HomePlaceholder extends StatelessWidget {
                 icon: Icons.brush_outlined,
                 expand: true,
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Canvas chegando no PR 1.1!',
-                        style: AquarelaTypography.bodyMedium
-                            .copyWith(color: Paper.white),
-                      ),
-                      backgroundColor: Pigment.ultramar,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(RadiusToken.md),
-                      ),
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const CanvasScreen(),
                     ),
                   );
                 },

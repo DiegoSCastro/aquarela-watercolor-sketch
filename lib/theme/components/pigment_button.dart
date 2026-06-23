@@ -37,9 +37,9 @@ class _PigmentButtonState extends State<PigmentButton> {
   Widget build(BuildContext context) {
     final isDisabled = widget.onPressed == null;
     final (bg, fg) = switch (widget.variant) {
-      PigmentButtonVariant.primary => (Pigment.ultramar, Paper.white),
+      PigmentButtonVariant.primary => (BrandPigment.ultramar, Paper.white),
       PigmentButtonVariant.secondary => (Paper.cream, Paper.ink),
-      PigmentButtonVariant.ghost => (Colors.transparent, Pigment.ultramar),
+      PigmentButtonVariant.ghost => (Colors.transparent, BrandPigment.ultramar),
     };
 
     final child = Row(

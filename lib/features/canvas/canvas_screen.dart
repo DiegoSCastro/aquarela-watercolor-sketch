@@ -1,0 +1,377 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'package:aquarela_watercolor_sketch/config/palette_ids.dart';
+import 'package:aquarela_watercolor_sketch/engine/canvas_painter.dart';
+import 'package:aquarela_watercolor_sketch/engine/pigment.dart';
+import 'package:aquarela_watercolor_sketch/features/canvas/canvas_cubit.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/radius.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/typography.dart';
+import 'package:aquarela_watercolor_sketch/features/palette/palette_screen.dart';
+
+/// The painting surface. Fullscreen, gesture-driven, with a
+/// minimalist top bar (save + clear) and bottom bar (open palette).
+///
+/// On a real device the user just drags a finger. We capture
+/// pointer events via [Listener] (lower level than GestureDetector
+/// so we don't lose any frames to gesture arena).
+class CanvasScreen extends StatefulWidget {
+  const CanvasScreen({super.key});
+
+  @override
+  State<CanvasScreen> createState() => _CanvasScreenState();
+}
+
+class _CanvasScreenState extends State<CanvasScreen>
+    with SingleTickerProviderStateMixin {
+  final GlobalKey _canvasKey = GlobalKey();
+  Ticker? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick)..start();
+  }
+
+  void _onTick(Duration elapsed) {
+    if (!mounted) return;
+    context.read<CanvasCubit>().onTick(elapsed);
+  }
+
+  @override
+  void dispose() {
+    _ticker?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Paper.white,
+      body: BlocProvider(
+        create: (_) => CanvasCubit(),
+        child: _CanvasView(canvasKey: _canvasKey),
+      ),
+    );
+  }
+}
+
+class _CanvasView extends StatelessWidget {
+  const _CanvasView({required this.canvasKey});
+
+  final GlobalKey canvasKey;
+
+  Future<void> _save(BuildContext context) async {
+    final cubit = context.read<CanvasCubit>();
+    if (cubit.state.strokes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pinte algo antes de salvar'),
+          backgroundColor: BrandPigment.ultramar,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Capture the canvas as PNG bytes.
+      final boundary =
+          canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        throw StateError('Canvas repaint boundary not found');
+      }
+      final image = await boundary.toImage(pixelRatio: 2.0);
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        throw StateError('Failed to encode canvas as PNG');
+      }
+      final bytes = byteData.buffer.asUint8List();
+
+      // Save to gallery.
+      await Gal.putImageBytes(bytes, name: 'aquarela_${DateTime.now().millisecondsSinceEpoch}');
+
+      // Also save a copy in app docs so it shows up in our gallery later.
+      final docs = await getApplicationDocumentsDirectory();
+      final galleryDir = Directory('${docs.path}/gallery');
+      if (!galleryDir.existsSync()) {
+        galleryDir.createSync(recursive: true);
+      }
+      final file = File(
+        '${galleryDir.path}/aquarela_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await file.writeAsBytes(bytes);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Salvo na galeria'),
+          backgroundColor: BrandPigment.ultramar,
+          action: SnackBarAction(
+            label: 'Compartilhar',
+            textColor: Paper.white,
+            onPressed: () => SharePlus.instance.share(
+              ShareParams(
+                files: [XFile(file.path)],
+                text: 'Pintei no Aquarela',
+              ),
+            ),
+          ),
+        ),
+      );
+    } on Exception catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao salvar: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Stack(
+        children: [
+          // Canvas
+          Positioned.fill(
+            child: RepaintBoundary(
+              key: canvasKey,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (d) =>
+                    context.read<CanvasCubit>().startStroke(d.localPosition),
+                onPanUpdate: (d) =>
+                    context.read<CanvasCubit>().addPoint(d.localPosition),
+                onPanEnd: (_) => context.read<CanvasCubit>().endStroke(),
+                child: BlocBuilder<CanvasCubit, CanvasState>(
+                  builder: (context, state) {
+                    return CustomPaint(
+                      painter: CanvasPainter(
+                        strokes: state.renderableStrokes,
+                        paperColor: Paper.cream,
+                      ),
+                      size: Size.infinite,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          // Top bar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _CanvasTopBar(
+              onSave: () => _save(context),
+              onClear: () => context.read<CanvasCubit>().clear(),
+            ),
+          ),
+
+          // Bottom bar
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: _CanvasBottomBar(
+              onOpenPalette: () {
+                showModalBottomSheet<void>(
+                  context: context,
+                  backgroundColor: Paper.white,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(RadiusToken.lg),
+                    ),
+                  ),
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<CanvasCubit>(),
+                    child: const PaletteScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CanvasTopBar extends StatelessWidget {
+  const _CanvasTopBar({required this.onSave, required this.onClear});
+
+  final VoidCallback onSave;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Paper.white.withValues(alpha: 0.95),
+        border: Border(
+          bottom: BorderSide(
+            color: Paper.mist.withValues(alpha: 0.3),
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Paper.charcoal),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          const Spacer(),
+          BlocBuilder<CanvasCubit, CanvasState>(
+            buildWhen: (a, b) =>
+                a.sessionSecondsRemaining != b.sessionSecondsRemaining,
+            builder: (context, state) {
+              if (state.sessionSecondsRemaining == null) {
+                return const SizedBox.shrink();
+              }
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: state.sessionSecondsRemaining! <= 5
+                      ? Colors.red.shade100
+                      : Paper.cream,
+                  borderRadius: BorderRadius.circular(RadiusToken.full),
+                ),
+                child: Text(
+                  '${state.sessionSecondsRemaining}s',
+                  style: AquarelaTypography.caption.copyWith(
+                    color: Paper.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            },
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, color: Paper.charcoal),
+            onPressed: onClear,
+            tooltip: 'Limpar',
+          ),
+          IconButton(
+            icon: const Icon(Icons.save_outlined, color: BrandPigment.ultramar),
+            onPressed: onSave,
+            tooltip: 'Salvar',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CanvasBottomBar extends StatelessWidget {
+  const _CanvasBottomBar({required this.onOpenPalette});
+
+  final VoidCallback onOpenPalette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Paper.white.withValues(alpha: 0.95),
+        border: Border(
+          top: BorderSide(
+            color: Paper.mist.withValues(alpha: 0.3),
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          BlocBuilder<CanvasCubit, CanvasState>(
+            buildWhen: (a, b) => a.currentPigment != b.currentPigment,
+            builder: (context, state) {
+              final color = _colorFor(state.currentPigment);
+              return GestureDetector(
+                onTap: onOpenPalette,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Paper.ink.withValues(alpha: 0.2),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Paper.shadow(opacity: 0.18),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: BlocBuilder<CanvasCubit, CanvasState>(
+              buildWhen: (a, b) =>
+                  a.currentBrush.waterRatio != b.currentBrush.waterRatio,
+              builder: (context, state) {
+                return Row(
+                  children: [
+                    const Icon(
+                      Icons.water_drop_outlined,
+                      size: 18,
+                      color: Paper.charcoal,
+                    ),
+                    Expanded(
+                      child: Slider(
+                        value: state.currentBrush.waterRatio,
+                        onChanged: (v) =>
+                            context.read<CanvasCubit>().setWaterRatio(v),
+                        activeColor: BrandPigment.ultramar,
+                        inactiveColor: Paper.mist,
+                      ),
+                    ),
+                    Text(
+                      'Água',
+                      style: AquarelaTypography.caption.copyWith(
+                        color: Paper.charcoal,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _colorFor(PigmentId id) {
+    final p = Pigment.byId(id);
+    return p?.color ?? BrandPigment.ultramar;
+  }
+}
