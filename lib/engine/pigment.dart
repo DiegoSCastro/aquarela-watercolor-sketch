@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:aquarela_watercolor_sketch/config/palette_ids.dart';
+
 /// A pigment is a pure color with a watercolor "personality":
 /// - [absorption]: how much the paper drinks it (0 = none, 1 = a lot)
 /// - [granulation]: 0 = smooth, 1 = visible grain texture
@@ -16,7 +18,7 @@ class Pigment {
     this.granulation = 0.0,
   });
 
-  final String id;
+  final PigmentId id;
   final String name;
   final Color color;
   final double absorption;
@@ -26,7 +28,7 @@ class Pigment {
 
   /// #1E3A8A — Ultramarine. Brand primary.
   static const ultramar = Pigment(
-    id: 'ultramar',
+    id: PigmentId.ultramar,
     name: 'Ultramar',
     color: Color(0xFF1E3A8A),
     absorption: 0.7,
@@ -34,7 +36,7 @@ class Pigment {
 
   /// #9B5D3A — Burnt Sienna. Brand secondary.
   static const burntSienna = Pigment(
-    id: 'burnt_sienna',
+    id: PigmentId.burntSienna,
     name: 'Terra Siena Queimada',
     color: Color(0xFF9B5D3A),
     absorption: 0.6,
@@ -43,7 +45,7 @@ class Pigment {
 
   /// #F2C94C — Cadmium Yellow. Brand accent.
   static const cadmiumYellow = Pigment(
-    id: 'cadmium_yellow',
+    id: PigmentId.cadmiumYellow,
     name: 'Amarelo Cádmio',
     color: Color(0xFFF2C94C),
     absorption: 0.3,
@@ -51,7 +53,7 @@ class Pigment {
 
   /// #2D3142 — Payne's Gray. Brand text/ink.
   static const paynesGray = Pigment(
-    id: 'paynes_gray',
+    id: PigmentId.paynesGray,
     name: 'Cinza de Payne',
     color: Color(0xFF2D3142),
     absorption: 0.8,
@@ -61,7 +63,7 @@ class Pigment {
 
   /// Viridian (Pro).
   static const viridian = Pigment(
-    id: 'viridian',
+    id: PigmentId.viridian,
     name: 'Viridiana',
     color: Color(0xFF40826D),
     absorption: 0.5,
@@ -69,14 +71,14 @@ class Pigment {
   );
 
   static const alizarinCrimson = Pigment(
-    id: 'alizarin_crimson',
+    id: PigmentId.alizarinCrimson,
     name: 'Carmim de Alizarina',
     color: Color(0xFF7A1F2B),
     absorption: 0.6,
   );
 
   static const cerulean = Pigment(
-    id: 'cerulean',
+    id: PigmentId.cerulean,
     name: 'Cerúleo',
     color: Color(0xFF3A8FB7),
     absorption: 0.4,
@@ -84,35 +86,35 @@ class Pigment {
   );
 
   static const lemonYellow = Pigment(
-    id: 'lemon_yellow',
+    id: PigmentId.lemonYellow,
     name: 'Amarelo Limão',
     color: Color(0xFFFFE066),
     absorption: 0.2,
   );
 
   static const roseMadder = Pigment(
-    id: 'rose_madder',
+    id: PigmentId.roseMadder,
     name: 'Rosa Madder',
     color: Color(0xFFC25A7C),
     absorption: 0.5,
   );
 
   static const sapGreen = Pigment(
-    id: 'sap_green',
+    id: PigmentId.sapGreen,
     name: 'Verde Seiva',
     color: Color(0xFF7A8B3D),
     absorption: 0.5,
   );
 
   static const indigo = Pigment(
-    id: 'indigo',
+    id: PigmentId.indigo,
     name: 'Anil',
     color: Color(0xFF3F4A6B),
     absorption: 0.7,
   );
 
   static const sepia = Pigment(
-    id: 'sepia',
+    id: PigmentId.sepia,
     name: 'Sépia',
     color: Color(0xFF704A2B),
     absorption: 0.6,
@@ -136,8 +138,8 @@ class Pigment {
     sepia,
   ];
 
-  /// Lookup by [id]. Returns null if not found.
-  static Pigment? byId(String id) {
+  /// Lookup by [PigmentId]. Returns null if not found.
+  static Pigment? byId(PigmentId id) {
     for (final p in curated) {
       if (p.id == id) return p;
     }

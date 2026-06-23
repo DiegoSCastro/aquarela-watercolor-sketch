@@ -1,3 +1,4 @@
+import 'package:aquarela_watercolor_sketch/config/palette_ids.dart';
 import 'package:aquarela_watercolor_sketch/engine/pigment.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -30,8 +31,8 @@ void main() {
 
     test('darker pigments have higher absorption than lighter ones', () {
       // Cadmium yellow (light) should absorb less than paynes gray (dark)
-      final cadmium = Pigment.curated.firstWhere((p) => p.id == 'cadmium_yellow');
-      final paynes = Pigment.curated.firstWhere((p) => p.id == 'paynes_gray');
+      final cadmium = Pigment.curated.firstWhere((p) => p.id == PigmentId.cadmiumYellow);
+      final paynes = Pigment.curated.firstWhere((p) => p.id == PigmentId.paynesGray);
       expect(paynes.absorption, greaterThan(cadmium.absorption));
     });
   });

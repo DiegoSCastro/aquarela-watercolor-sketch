@@ -212,7 +212,7 @@ class _PageIndicator extends StatelessWidget {
           height: 8,
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: isActive ? Pigment.ultramar : Paper.mist.withValues(alpha: 0.4),
+            color: isActive ? BrandPigment.ultramar : Paper.mist.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(4),
           ),
         );

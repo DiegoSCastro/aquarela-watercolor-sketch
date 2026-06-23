@@ -26,7 +26,7 @@ class _Slide1Painter extends CustomPainter {
     // === Background watercolor stroke behind the phone ===
     final bgStrokePaint = Paint()
       ..shader = LinearGradient(
-        colors: [Pigment.cadmiumYellow, Pigment.burntSienna],
+        colors: [BrandPigment.cadmiumYellow, BrandPigment.burntSienna],
       ).createShader(Rect.fromLTWH(0, h * 0.15, w, h * 0.5))
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
@@ -45,7 +45,7 @@ class _Slide1Painter extends CustomPainter {
     canvas.translate(w * 0.55, h * 0.5);
     canvas.rotate(-0.08);
 
-    final phonePaint = Paint()..color = Pigment.ultramar;
+    final phonePaint = Paint()..color = BrandPigment.ultramar;
     final phoneBody = RRect.fromRectAndRadius(
       Rect.fromCenter(center: Offset.zero, width: w * 0.32, height: h * 0.50),
       const Radius.circular(24),
@@ -63,8 +63,8 @@ class _Slide1Painter extends CustomPainter {
     final innerPigment1 = Paint()
       ..shader = RadialGradient(
         colors: [
-          Pigment.ultramar,
-          Pigment.ultramar.withValues(alpha: 0.0),
+          BrandPigment.ultramar,
+          BrandPigment.ultramar.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: const Offset(-12, -12), radius: 32))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
@@ -73,20 +73,20 @@ class _Slide1Painter extends CustomPainter {
     final innerPigment2 = Paint()
       ..shader = RadialGradient(
         colors: [
-          Pigment.burntSienna,
-          Pigment.burntSienna.withValues(alpha: 0.0),
+          BrandPigment.burntSienna,
+          BrandPigment.burntSienna.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: const Offset(12, 15), radius: 25))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
     canvas.drawCircle(const Offset(12, 15), 25, innerPigment2);
 
     final innerPigment3 = Paint()
-      ..color = Pigment.cadmiumYellow.withValues(alpha: 0.6)
+      ..color = BrandPigment.cadmiumYellow.withValues(alpha: 0.6)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
     canvas.drawCircle(const Offset(0, -25), 14, innerPigment3);
 
     // Notch
-    final notchPaint = Paint()..color = Pigment.ultramar;
+    final notchPaint = Paint()..color = BrandPigment.ultramar;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(center: const Offset(0, -70), width: 32, height: 4),
@@ -102,7 +102,7 @@ class _Slide1Painter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
-        colors: [Pigment.ultramar, Pigment.cadmiumYellow],
+        colors: [BrandPigment.ultramar, BrandPigment.cadmiumYellow],
       ).createShader(Rect.fromLTWH(0, 0, w, h * 0.3))
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
@@ -129,7 +129,7 @@ class _Slide1Painter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: [
           const Color(0xFFB8835E),
-          Pigment.burntSienna.withValues(alpha: 0.7),
+          BrandPigment.burntSienna.withValues(alpha: 0.7),
         ],
       ).createShader(Rect.fromLTWH(0, h * 0.6, w, h * 0.4))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);

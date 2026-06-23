@@ -34,7 +34,7 @@ class PigmentDot extends StatelessWidget {
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: selected ? Pigment.ultramar : Paper.white,
+            color: selected ? BrandPigment.ultramar : Paper.white,
             width: selected ? 3 : 2,
           ),
           boxShadow: [

@@ -14,11 +14,11 @@ class AquarelaTheme {
   static ThemeData light() {
     final colorScheme = ColorScheme(
       brightness: Brightness.light,
-      primary: Pigment.ultramar,
+      primary: BrandPigment.ultramar,
       onPrimary: Paper.white,
-      secondary: Pigment.burntSienna,
+      secondary: BrandPigment.burntSienna,
       onSecondary: Paper.white,
-      tertiary: Pigment.cadmiumYellow,
+      tertiary: BrandPigment.cadmiumYellow,
       onTertiary: Paper.ink,
       error: const Color(0xFFC0392B),
       onError: Paper.white,
@@ -69,7 +69,7 @@ class AquarelaTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Pigment.ultramar,
+          backgroundColor: BrandPigment.ultramar,
           foregroundColor: Paper.white,
           textStyle: AquarelaTypography.button,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -81,7 +81,7 @@ class AquarelaTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: Pigment.ultramar,
+          foregroundColor: BrandPigment.ultramar,
           textStyle: AquarelaTypography.subhead,
         ),
       ),
@@ -98,10 +98,10 @@ class AquarelaTheme {
         ),
       ),
       sliderTheme: SliderThemeData(
-        activeTrackColor: Pigment.ultramar,
+        activeTrackColor: BrandPigment.ultramar,
         inactiveTrackColor: Paper.mist.withValues(alpha: 0.4),
         thumbColor: Paper.white,
-        overlayColor: Pigment.ultramar.withValues(alpha: 0.1),
+        overlayColor: BrandPigment.ultramar.withValues(alpha: 0.1),
         trackHeight: 4,
       ),
       dividerTheme: const DividerThemeData(

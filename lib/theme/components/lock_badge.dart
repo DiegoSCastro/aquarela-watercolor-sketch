@@ -21,7 +21,7 @@ class LockBadge extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Pigment.cadmiumYellow,
+        color: BrandPigment.cadmiumYellow,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
@@ -103,10 +103,10 @@ class _UpgradeBannerState extends State<UpgradeBanner>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Pigment.cadmiumYellow.withValues(alpha: 0.15),
+                color: BrandPigment.cadmiumYellow.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(RadiusToken.md),
                 border: Border.all(
-                  color: Pigment.cadmiumYellow.withValues(alpha: 0.5),
+                  color: BrandPigment.cadmiumYellow.withValues(alpha: 0.5),
                   width: 1,
                 ),
               ),
@@ -115,7 +115,7 @@ class _UpgradeBannerState extends State<UpgradeBanner>
                   const Icon(
                     Icons.auto_awesome_rounded,
                     size: 20,
-                    color: Pigment.ultramar,
+                    color: BrandPigment.ultramar,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -135,7 +135,7 @@ class _UpgradeBannerState extends State<UpgradeBanner>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Pigment.ultramar,
+                      color: BrandPigment.ultramar,
                       borderRadius: BorderRadius.circular(RadiusToken.full),
                     ),
                     child: Text(
