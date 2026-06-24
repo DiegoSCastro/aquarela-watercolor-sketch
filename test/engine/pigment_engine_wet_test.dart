@@ -214,6 +214,77 @@ void main() {
       expect(stamps.first.color, ultramar.color);
     });
   });
+
+  group('PigmentEngine.stroke — bounding-box filter (perf)', () {
+    // Verifies the engine still produces correct results when the
+    // query point is far from the existing stroke's bounding box.
+    // The bounding-box pre-filter is what makes the engine fast on
+    // canvases with many strokes.
+    final wetBrush = const Brush(
+      id: 'round_small',
+      type: BrushType.round,
+      size: 12,
+      opacity: 0.85,
+      waterRatio: 0.8,
+    );
+    final ultramar = Pigment.ultramar;
+    final viridian = Pigment.viridian;
+    final viridianColor = viridian.color;
+
+    Offset point(double x, double y) => Offset(x, y);
+
+    Stamp stampAt(Offset offset, {Color? color, double radius = 10}) {
+      return Stamp(
+        offset: offset,
+        radius: radius,
+        color: color ?? ultramar.color,
+        alpha: 0.85,
+      );
+    }
+
+    test('far-away stroke is skipped via bounding box, no mix happens', () {
+      // Existing stroke near the origin. Query point is at (5000, 5000).
+      final farStroke = Stroke(
+        id: 's_far',
+        brush: wetBrush,
+        pigment: ultramar.id,
+        path: [point(0, 0)],
+        stamps: [stampAt(point(0, 0), color: viridianColor)],
+        createdAt: DateTime.now(),
+      );
+
+      final stamps = PigmentEngine.stroke(
+        brush: wetBrush,
+        pigment: ultramar,
+        path: [point(5000, 5000)],
+        existing: [farStroke],
+      );
+
+      // No mix — pure ultramar — even though the stroke is "wet".
+      expect(stamps.first.color, ultramar.color);
+    });
+
+    test('nearby stroke within bounding box still mixes', () {
+      final nearStroke = Stroke(
+        id: 's_near',
+        brush: wetBrush,
+        pigment: ultramar.id,
+        path: [point(10, 10)],
+        stamps: [stampAt(point(10, 10), color: viridianColor)],
+        createdAt: DateTime.now(),
+      );
+
+      final stamps = PigmentEngine.stroke(
+        brush: wetBrush,
+        pigment: ultramar,
+        path: [point(12, 12)],
+        existing: [nearStroke],
+      );
+
+      // Mix happens — the result must not be pure ultramar.
+      expect(stamps.first.color, isNot(ultramar.color));
+    });
+  });
 }
 
 /// Helper — distance in RGB space from pure viridian. Lower =
