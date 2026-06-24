@@ -34,7 +34,7 @@ class PigmentEngine {
 
   /// Convert a [path] of touch points into renderable stamps.
   ///
-  /// [brush] — the active brush (size, opacity, water ratio).
+  /// [brush] — the active brush (size, opacity, water ratio, type).
   /// [pigment] — the active pigment (color, absorption).
   /// [path] — finger waypoints. Empty list returns empty list.
   /// [existing] — strokes already on the canvas. Used for
@@ -56,6 +56,11 @@ class PigmentEngine {
     final absorptionFactor = 0.8 + pigment.absorption * 0.6;
     final baseRadius = brush.size * bleedFactor * absorptionFactor;
 
+    // Brush-type multipliers — round keeps its base radius; flat
+    // elongates horizontally; fan adds many sub-stamps with high
+    // jitter for a dry-brush look; mop is large and soft.
+    final typeMult = _typeMultipliers(brush.type);
+
     for (final p in path) {
       // Wet-on-wet color mix: if the brush is wet and the path
       // passes near an existing stroke, bias the new stamp color
@@ -67,7 +72,7 @@ class PigmentEngine {
       stamps.add(
         Stamp(
           offset: p,
-          radius: baseRadius,
+          radius: baseRadius * typeMult.radius,
           color: mixColor,
           alpha: brush.opacity,
         ),
@@ -75,22 +80,29 @@ class PigmentEngine {
 
       // Bleed sub-stamps: small offsets and slightly different
       // radii, for organic edges. Number of sub-stamps scales with
-      // waterRatio: dry=0, wet=5.
-      final samples = (brush.waterRatio * _bleedSamples).round();
+      // waterRatio AND brush type: fan brushes always emit many,
+      // mop brushes emit a wide halo, flat brushes a tight row.
+      final samples = (brush.waterRatio * _bleedSamples * typeMult.samples)
+          .round();
       for (var s = 0; s < samples; s++) {
         final angle = random.nextDouble() * 2 * math.pi;
-        final distance = baseRadius * (0.5 + random.nextDouble() * 0.5);
-        final dx = math.cos(angle) * distance;
-        final dy = math.sin(angle) * distance;
-        final subRadius = baseRadius * (0.3 + random.nextDouble() * 0.4);
-        final subAlpha = brush.opacity * (0.3 + random.nextDouble() * 0.4);
+        final distance = baseRadius *
+            typeMult.radius *
+            (0.5 + random.nextDouble() * 0.5);
+        final dx = math.cos(angle) * distance * typeMult.spreadX;
+        final dy = math.sin(angle) * distance * typeMult.spreadY;
+        final subRadius = baseRadius *
+            typeMult.radius *
+            (0.3 + random.nextDouble() * 0.4);
+        final subAlpha =
+            brush.opacity * typeMult.subAlpha * (0.3 + random.nextDouble() * 0.4);
 
         stamps.add(
           Stamp(
             offset: p + Offset(dx, dy),
             radius: subRadius,
             color: mixColor,
-            alpha: subAlpha,
+            alpha: subAlpha.clamp(0.0, 1.0),
           ),
         );
       }
@@ -99,7 +111,77 @@ class PigmentEngine {
     return stamps;
   }
 
-  /// Compute the wet-on-wet mix color for a waypoint [p]. Returns
+  /// Per-brush-type tuning. Keeps the base engine math intact
+  /// while letting each tip behave like its real-world counterpart.
+  static _BrushTuning _typeMultipliers(BrushType type) {
+    switch (type) {
+      case BrushType.round:
+        return const _BrushTuning(
+          radius: 1.0,
+          samples: 1.0,
+          spreadX: 1.0,
+          spreadY: 1.0,
+          subAlpha: 1.0,
+        );
+      case BrushType.flat:
+        // Flat brushes leave a horizontal streak — wider X spread,
+        // tighter Y. Fewer jittered sub-stamps.
+        return const _BrushTuning(
+          radius: 1.1,
+          samples: 0.6,
+          spreadX: 1.4,
+          spreadY: 0.5,
+          subAlpha: 0.85,
+        );
+      case BrushType.fan:
+        // Fan brushes spread pigment unevenly — many small, dry
+        // sub-stamps with chaotic offsets.
+        return const _BrushTuning(
+          radius: 0.9,
+          samples: 1.6,
+          spreadX: 1.2,
+          spreadY: 1.2,
+          subAlpha: 0.5,
+        );
+      case BrushType.mop:
+        // Mop brushes are big and soft — large radius, low alpha
+        // per sub-stamp, wide halo.
+        return const _BrushTuning(
+          radius: 1.6,
+          samples: 1.4,
+          spreadX: 1.0,
+          spreadY: 1.0,
+          subAlpha: 0.6,
+        );
+    }
+  }
+
+  /// Convert a single touch waypoint into the stamps that should
+  /// appear for that one point. Used for **real-time** rendering:
+  /// the canvas emits stamps as the finger moves, not only on lift.
+  ///
+  /// [brush] / [pigment] — the active tool.
+  /// [point] — the new waypoint.
+  /// [existing] — strokes already on the canvas. Used for
+  ///   wet-on-wet color bleeding. The stroke being currently
+  ///   drawn (if any) is represented here as a [Stroke] whose
+  ///   `stamps` field carries the stamps already emitted for the
+  ///   same drag — that way wet-on-wet can blend within the same
+  ///   stroke as it grows.
+  static List<Stamp> stamp({
+    required Brush brush,
+    required Pigment pigment,
+    required Offset point,
+    required List<Stroke> existing,
+  }) {
+    return stroke(
+      brush: brush,
+      pigment: pigment,
+      path: [point],
+      existing: existing,
+    );
+  }
+
   /// the original pigment color if no existing stroke is close
   /// enough, or the wet brush is dry (waterRatio near 0).
   static Color _wetMix(
@@ -153,4 +235,31 @@ class PigmentEngine {
     return Color.lerp(pigment.color, nearestStamp.color, mixAmount) ??
         pigment.color;
   }
+}
+
+/// Per-brush-type tuning table. Private to the engine — callers
+/// don't need to know about it.
+class _BrushTuning {
+  const _BrushTuning({
+    required this.radius,
+    required this.samples,
+    required this.spreadX,
+    required this.spreadY,
+    required this.subAlpha,
+  });
+
+  /// Multiplier on the base radius for both the center and sub stamps.
+  final double radius;
+
+  /// Multiplier on the bleed sub-stamp count.
+  final double samples;
+
+  /// Horizontal / vertical stretch of the sub-stamp cloud. Flat
+  /// brushes get spreadX > spreadY to look like a horizontal streak.
+  final double spreadX;
+  final double spreadY;
+
+  /// Multiplier on the alpha of each sub-stamp. Lower for fan/mop
+  /// (softer edges), higher for round/flat (crisper deposits).
+  final double subAlpha;
 }
