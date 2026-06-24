@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:aquarela_watercolor_sketch/config/premium_config.dart';
+import 'package:aquarela_watercolor_sketch/ads/banner_ad_widget.dart';
 import 'package:aquarela_watercolor_sketch/features/canvas/canvas_screen.dart';
 import 'package:aquarela_watercolor_sketch/features/gallery/gallery_screen.dart';
-import 'package:aquarela_watercolor_sketch/features/paywall/paywall_screen.dart';
-import 'package:aquarela_watercolor_sketch/theme/components/lock_badge.dart';
 import 'package:aquarela_watercolor_sketch/theme/components/pigment_button.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart';
@@ -12,17 +10,16 @@ import 'package:aquarela_watercolor_sketch/theme/tokens/radius.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/spacing.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/typography.dart';
 
-/// Placeholder home — shows what the user gets right now (Free tier
-/// limits clearly visible) and a CTA to upgrade. Replaced by the
-/// canvas screen in PR 1.1.
+/// Landing screen after onboarding. Greets the painter, links to
+/// the gallery, and has a big primary CTA to start painting.
+///
+/// The app is free with ads — no tier system, no paywall, no
+/// limits beyond the gesture surface itself.
 class HomePlaceholder extends StatelessWidget {
   const HomePlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final config = PremiumConfig.current;
-    final isFree = !config.isPremium;
-
     return Scaffold(
       backgroundColor: Paper.white,
       body: SafeArea(
@@ -35,45 +32,24 @@ class HomePlaceholder extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _Greeting(isFree: isFree),
+                  const _Greeting(),
                   const _SettingsButton(),
                 ],
               ),
-
               const SizedBox(height: Space.xl),
-
-              Expanded(
+              const Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Upgrade banner — free users only
-                      if (isFree)
-                        UpgradeBanner(
-                          onUpgrade: () => _openPaywall(context),
-                        ),
-
-                      if (isFree) const SizedBox(height: Space.xl),
-
-                      // Tier summary card
-                      const _TierSummaryCard(),
-
-                      const SizedBox(height: Space.md),
-
-                      PigmentButton(
-                        label: 'Ver galeria',
-                        icon: Icons.photo_library_outlined,
-                        variant: PigmentButtonVariant.ghost,
-                        expand: true,
-                        onPressed: () => _openGallery(context),
-                      ),
+                      _IntroCard(),
+                      SizedBox(height: Space.md),
+                      GalleryEntryButton(),
                     ],
                   ),
                 ),
               ),
-
               const SizedBox(height: Space.lg),
-
               PigmentButton(
                 label: 'Começar a pintar',
                 icon: Icons.brush_outlined,
@@ -81,6 +57,8 @@ class HomePlaceholder extends StatelessWidget {
                 onPressed: () => _openCanvas(context),
               ),
               const SizedBox(height: Space.lg),
+              const BannerAdWidget(),
+              const SizedBox(height: Space.sm),
             ],
           ),
         ),
@@ -88,25 +66,7 @@ class HomePlaceholder extends StatelessWidget {
     );
   }
 
-  void _openPaywall(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PaywallScreen(
-          onClose: () => Navigator.of(context).pop(),
-        ),
-      ),
-    );
-  }
-
-  void _openGallery(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const GalleryScreen(),
-      ),
-    );
-  }
-
-  void _openCanvas(BuildContext context) {
+  static void _openCanvas(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => const CanvasScreen(),
@@ -116,13 +76,10 @@ class HomePlaceholder extends StatelessWidget {
 }
 
 class _Greeting extends StatelessWidget {
-  const _Greeting({required this.isFree});
-
-  final bool isFree;
+  const _Greeting();
 
   @override
   Widget build(BuildContext context) {
-    final config = PremiumConfig.current;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,15 +96,13 @@ class _Greeting extends StatelessWidget {
             vertical: 3,
           ),
           decoration: BoxDecoration(
-            color: isFree
-                ? Paper.cream
-                : BrandPigment.cadmiumYellow.withValues(alpha: 0.2),
+            color: BrandPigment.cadmiumYellow.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(RadiusToken.full),
           ),
           child: Text(
-            'Plano ${config.tierName}',
+            'Aquarela',
             style: AquarelaTypography.caption.copyWith(
-              color: isFree ? Paper.charcoal : Paper.ink,
+              color: Paper.ink,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -182,13 +137,13 @@ class _SettingsButton extends StatelessWidget {
   }
 }
 
-class _TierSummaryCard extends StatelessWidget {
-  const _TierSummaryCard();
+/// A short marketing card that explains what the app is and what
+/// makes it different: minimal, watercolor-only, free with ads.
+class _IntroCard extends StatelessWidget {
+  const _IntroCard();
 
   @override
   Widget build(BuildContext context) {
-    final config = PremiumConfig.current;
-
     return Container(
       padding: const EdgeInsets.all(Space.lg),
       decoration: BoxDecoration(
@@ -203,52 +158,20 @@ class _TierSummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Seu plano',
+            'Pinte com aquarela',
             style: AquarelaTypography.headlineSmall.copyWith(
               color: Paper.ink,
               fontSize: 18,
             ),
           ),
-          const SizedBox(height: Space.md),
-          _LimitRow(
-            icon: Icons.water_drop_outlined,
-            label: 'Pigmentos',
-            value: config.isPremium
-                ? '12 (todos)'
-                : '${config.maxPigments} de 12',
-            isLocked: !config.isPremium,
-          ),
-          _LimitRow(
-            icon: Icons.brush_outlined,
-            label: 'Pincéis',
-            value: config.isPremium
-                ? '6 (todos)'
-                : '${config.availableBrushes.length} de 6',
-            isLocked: !config.isPremium,
-          ),
-          _LimitRow(
-            icon: Icons.timer_outlined,
-            label: 'Sessão',
-            value: config.isPremium
-                ? 'Ilimitada'
-                : '${config.maxSessionSeconds}s',
-            isLocked: !config.isPremium,
-          ),
-          _LimitRow(
-            icon: Icons.photo_library_outlined,
-            label: 'Obras salvas',
-            value: config.isPremium
-                ? 'Ilimitadas'
-                : 'Até ${config.maxSavedPaintings}',
-            isLocked: !config.isPremium,
-          ),
-          _LimitRow(
-            icon: Icons.high_quality_outlined,
-            label: 'Export',
-            value: config.isPremium
-                ? '${config.maxExportPx}px HD'
-                : "${config.maxExportPx}px + marca d'água",
-            isLocked: !config.isPremium,
+          const SizedBox(height: Space.sm),
+          Text(
+            'Toque e arraste — a tinta escorre, mistura e seca como '
+            'numa folha de papel de verdade. Sem limites de sessão, '
+            'sem assinatura.',
+            style: AquarelaTypography.bodyMedium.copyWith(
+              color: Paper.charcoal,
+            ),
           ),
         ],
       ),
@@ -256,48 +179,25 @@ class _TierSummaryCard extends StatelessWidget {
   }
 }
 
-class _LimitRow extends StatelessWidget {
-  const _LimitRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.isLocked,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool isLocked;
+/// Standalone gallery entry (no longer pushed by the home button;
+/// used as a target by deep links and onboarding in future PRs).
+class GalleryEntryButton extends StatelessWidget {
+  const GalleryEntryButton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Paper.charcoal),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: AquarelaTypography.bodyMedium.copyWith(
-                color: Paper.charcoal,
-              ),
-            ),
+    return PigmentButton(
+      label: 'Ver galeria',
+      icon: Icons.photo_library_outlined,
+      variant: PigmentButtonVariant.ghost,
+      expand: true,
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const GalleryScreen(),
           ),
-          Text(
-            value,
-            style: AquarelaTypography.bodyMedium.copyWith(
-              color: Paper.ink,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (isLocked) ...[
-            const SizedBox(width: 8),
-            const LockBadge(size: 16),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }

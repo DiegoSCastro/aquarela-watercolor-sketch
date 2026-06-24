@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
-import 'package:aquarela_watercolor_sketch/config/premium_config.dart';
 import 'package:aquarela_watercolor_sketch/features/gallery/gallery_screen.dart';
 import 'package:aquarela_watercolor_sketch/theme/components/empty_state.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/typography.dart';
@@ -19,11 +18,7 @@ void main() {
 
   setUp(() {
     pathProvider.reset();
-    // Default: free tier (4 pigments, 3 saved, 30s session)
-    PremiumConfig.overrideForTest(isPremium: false);
   });
-
-  tearDown(PremiumConfig.resetForTest);
 
   // Wrap a child in a MaterialApp that uses a system font for the
   // text theme. AquarelaTypography (Lora / Inter) is replaced with
@@ -74,8 +69,7 @@ void main() {
     expect(find.byType(EmptyState), findsNothing);
   });
 
-  testWidgets('free tier shows at most 3 items even with more files',
-      (tester) async {
+  testWidgets('shows all items with no cap (no tier system)', (tester) async {
     await tester.runAsync(() async {
       pathProvider.seedPngs([
         'aquarela_1000.png',
@@ -89,28 +83,10 @@ void main() {
     await tester.pumpWidget(wrap(const GalleryScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.byType(Image), findsNWidgets(3));
-  });
-
-  testWidgets('pro tier shows all items', (tester) async {
-    PremiumConfig.overrideForTest(isPremium: true);
-    await tester.runAsync(() async {
-      pathProvider.seedPngs([
-        'aquarela_1000.png',
-        'aquarela_2000.png',
-        'aquarela_3000.png',
-        'aquarela_4000.png',
-        'aquarela_5000.png',
-      ]);
-    });
-
-    await tester.pumpWidget(wrap(const GalleryScreen()));
-    await tester.pumpAndSettle();
-    // Count items by reading the GridView's item count directly.
-    // The widget itself reports the full list length regardless
-    // of which cells are currently laid out on screen.
-    final gridFinder = find.byType(GridView);
-    final gridWidget = tester.widget<GridView>(gridFinder);
+    // Read the GridView's semantic child count so the assertion
+    // is viewport-independent (the 600px test viewport only
+    // fits 2 of 3 grid rows when aspectRatio is 0.85).
+    final gridWidget = tester.widget<GridView>(find.byType(GridView));
     expect(gridWidget.semanticChildCount, 5);
   });
 

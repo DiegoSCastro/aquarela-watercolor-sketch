@@ -13,13 +13,3 @@ enum PigmentId {
   indigo,
   sepia,
 }
-
-/// Brush identifiers — round/small is the only free one.
-enum BrushId {
-  roundSmall,
-  roundMedium,
-  roundLarge,
-  flat,
-  fan,
-  mop,
-}

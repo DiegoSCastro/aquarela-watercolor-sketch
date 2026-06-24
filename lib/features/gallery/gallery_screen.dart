@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import 'package:aquarela_watercolor_sketch/config/premium_config.dart';
 import 'package:aquarela_watercolor_sketch/theme/components/empty_state.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/radius.dart';
@@ -22,8 +21,8 @@ class GalleryItem {
 }
 
 /// In-app gallery: lists PNGs saved under app docs/gallery. Lets
-/// the user share or delete them. Free tier caps the visible
-/// items at [PremiumConfig.maxSavedPaintings].
+/// the user share or delete them. No tier cap — all saved
+/// paintings are always visible.
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
 
@@ -69,11 +68,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
         (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
       );
 
-      // Apply the free-tier cap so users see what their tier allows.
-      final cap = PremiumConfig.current.maxSavedPaintings;
-      final visible = cap < 0 ? files : files.take(cap).toList();
-
-      final items = visible
+      final items = files
           .map(
             (f) => GalleryItem(
               file: f,
