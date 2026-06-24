@@ -154,8 +154,9 @@ class _CanvasViewState extends State<_CanvasView> {
                   builder: (context, state) {
                     return CustomPaint(
                       painter: CanvasPainter(
-                        strokes: state.renderableStrokes,
+                        strokes: state.strokes,
                         paperColor: Paper.cream,
+                        liveStroke: state.liveSnapshot,
                       ),
                       size: Size.infinite,
                     );
