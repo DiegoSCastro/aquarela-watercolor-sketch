@@ -1,21 +1,18 @@
-import 'package:aquarela_watercolor_sketch/engine/pigment.dart';
-import 'package:aquarela_watercolor_sketch/features/paywall/paywall_screen.dart';
-import 'package:aquarela_watercolor_sketch/theme/components/lock_badge.dart';
-import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
-import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart'
-    show BrandPigment;
-import 'package:aquarela_watercolor_sketch/theme/tokens/radius.dart';
-import 'package:aquarela_watercolor_sketch/theme/tokens/spacing.dart';
-import 'package:aquarela_watercolor_sketch/theme/tokens/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:aquarela_watercolor_sketch/config/premium_config.dart';
+import 'package:aquarela_watercolor_sketch/engine/brush.dart';
+import 'package:aquarela_watercolor_sketch/engine/pigment.dart';
 import 'package:aquarela_watercolor_sketch/features/canvas/canvas_cubit.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/pigment.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/radius.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/spacing.dart';
+import 'package:aquarela_watercolor_sketch/theme/tokens/typography.dart';
 
-/// Bottom sheet that lets the user pick a pigment and adjust
-/// brush settings. Lives inside the canvas sheet — receives the
-/// [CanvasCubit] via BlocProvider.value from the parent.
+/// Bottom sheet that lets the user pick a pigment, choose a brush
+/// tip, and adjust brush settings. Lives inside the canvas sheet —
+/// receives the [CanvasCubit] via BlocProvider.value from the parent.
 class PaletteScreen extends StatelessWidget {
   const PaletteScreen({super.key});
 
@@ -40,53 +37,14 @@ class PaletteScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Pigmentos',
-                  style: AquarelaTypography.headlineLarge.copyWith(
-                    color: Paper.ink,
-                    fontSize: 20,
-                  ),
-                ),
-                _TierBadge(),
-              ],
-            ),
-            const SizedBox(height: Space.md),
             const _SelectedPigmentCard(),
+            const SizedBox(height: Space.lg),
+            const _BrushPicker(),
             const SizedBox(height: Space.lg),
             const _PigmentGrid(),
             const SizedBox(height: Space.lg),
             const _BrushControls(),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Small badge showing the user's current tier (Free / Pro).
-class _TierBadge extends StatelessWidget {
-  const _TierBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    final config = PremiumConfig.current;
-    final isPro = config.isPremium;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: isPro
-            ? BrandPigment.cadmiumYellow.withValues(alpha: 0.2)
-            : Paper.cream,
-        borderRadius: BorderRadius.circular(RadiusToken.full),
-      ),
-      child: Text(
-        'Plano ${config.tierName}',
-        style: AquarelaTypography.caption.copyWith(
-          color: isPro ? Paper.ink : Paper.charcoal,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -176,6 +134,170 @@ class _SelectedPigmentCard extends StatelessWidget {
   }
 }
 
+/// 6-tip brush picker. The icons are deliberately stylised to
+/// suggest the tip shape (round dot, flat bar, fan spread, mop
+/// blob) rather than literal brushes.
+class _BrushPicker extends StatelessWidget {
+  const _BrushPicker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pincéis',
+          style: AquarelaTypography.headlineSmall.copyWith(
+            color: Paper.ink,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: Space.sm),
+        BlocBuilder<CanvasCubit, CanvasState>(
+          buildWhen: (a, b) => a.currentBrush.id != b.currentBrush.id,
+          builder: (context, state) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (final id in BrushId.values)
+                  _BrushIcon(
+                    brush: brushFor(id),
+                    isSelected: state.currentBrush.id == brushFor(id).id,
+                    onTap: () =>
+                        context.read<CanvasCubit>().setBrush(brushFor(id)),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _BrushIcon extends StatelessWidget {
+  const _BrushIcon({
+    required this.brush,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final Brush brush;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isSelected ? Paper.cream : Paper.white,
+              borderRadius: BorderRadius.circular(RadiusToken.md),
+              border: Border.all(
+                color: isSelected
+                    ? BrandPigment.ultramar
+                    : Paper.mist.withValues(alpha: 0.5),
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: CustomPaint(
+              size: const Size(28, 28),
+              painter: _BrushTipPainter(brush: brush),
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: 48,
+            child: Text(
+              _label(brush.id),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AquarelaTypography.caption.copyWith(
+                color: isSelected ? Paper.ink : Paper.charcoal,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _label(String id) {
+    switch (id) {
+      case 'round_small':
+        return 'Redondo P';
+      case 'round_medium':
+        return 'Redondo M';
+      case 'round_large':
+        return 'Redondo G';
+      case 'flat':
+        return 'Chato';
+      case 'fan':
+        return 'Leque';
+      case 'mop':
+        return 'Mop';
+      default:
+        return id;
+    }
+  }
+}
+
+/// Stylised painter for each brush tip. Keeps the icons readable
+/// at 28x28 and consistent with the actual stamp geometry.
+class _BrushTipPainter extends CustomPainter {
+  const _BrushTipPainter({required this.brush});
+
+  final Brush brush;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final color = Paper.charcoal;
+    final paint = Paint()..color = color;
+    final c = size.center(Offset.zero);
+    switch (brush.type) {
+      case BrushType.round:
+        canvas.drawCircle(c, brush.size / 4, paint);
+      case BrushType.flat:
+        final rect = Rect.fromCenter(
+          center: c,
+          width: 22,
+          height: 6,
+        );
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, const Radius.circular(1.5)),
+          paint,
+        );
+      case BrushType.fan:
+        for (var i = -2; i <= 2; i++) {
+          final dx = i * 4.0;
+          canvas.drawLine(
+            Offset(c.dx + dx, c.dy - 8),
+            Offset(c.dx + dx, c.dy + 8),
+            paint..strokeWidth = 1.2,
+          );
+        }
+      case BrushType.mop:
+        final path = Path()
+          ..addOval(
+            Rect.fromCenter(center: c, width: 22, height: 18),
+          );
+        canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BrushTipPainter old) => old.brush.id != brush.id;
+}
+
 class _PigmentGrid extends StatelessWidget {
   const _PigmentGrid();
 
@@ -184,43 +306,32 @@ class _PigmentGrid extends StatelessWidget {
     return BlocBuilder<CanvasCubit, CanvasState>(
       buildWhen: (a, b) => a.currentPigment != b.currentPigment,
       builder: (context, state) {
-        final config = PremiumConfig.current;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (var i = 0; i < Pigment.curated.length; i++)
-              _PigmentSwatch(
-                pigment: Pigment.curated[i],
-                isSelected: state.currentPigment == Pigment.curated[i].id,
-                isLocked: !config.isPremium && i >= config.maxPigments,
-                onTap: () => _onPigmentTapped(context, i),
+            Text(
+              'Pigmentos',
+              style: AquarelaTypography.headlineSmall.copyWith(
+                color: Paper.ink,
+                fontSize: 14,
               ),
+            ),
+            const SizedBox(height: Space.sm),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final p in Pigment.curated)
+                  _PigmentSwatch(
+                    pigment: p,
+                    isSelected: state.currentPigment == p.id,
+                    onTap: () => context.read<CanvasCubit>().setPigment(p.id),
+                  ),
+              ],
+            ),
           ],
         );
       },
-    );
-  }
-
-  void _onPigmentTapped(BuildContext context, int index) {
-    final config = PremiumConfig.current;
-    final isLocked = !config.isPremium && index >= config.maxPigments;
-    if (isLocked) {
-      _openPaywallForLockedPigment(context);
-      return;
-    }
-    context.read<CanvasCubit>().setPigment(Pigment.curated[index].id);
-  }
-
-  void _openPaywallForLockedPigment(BuildContext context) {
-    // Open the paywall screen above the palette sheet.
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PaywallScreen(
-          onClose: () => Navigator.of(context).pop(),
-        ),
-        fullscreenDialog: true,
-      ),
     );
   }
 }
@@ -229,13 +340,11 @@ class _PigmentSwatch extends StatelessWidget {
   const _PigmentSwatch({
     required this.pigment,
     required this.isSelected,
-    required this.isLocked,
     required this.onTap,
   });
 
   final Pigment pigment;
   final bool isSelected;
-  final bool isLocked;
   final VoidCallback onTap;
 
   @override
@@ -246,39 +355,26 @@ class _PigmentSwatch extends StatelessWidget {
         width: 60,
         child: Column(
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: isLocked
-                        ? pigment.color.withValues(alpha: 0.3)
-                        : pigment.color,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? BrandPigment.ultramar
-                          : Paper.ink.withValues(alpha: 0.2),
-                      width: isSelected ? 2.5 : 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Paper.shadow(opacity: 0.15),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: pigment.color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? BrandPigment.ultramar
+                      : Paper.ink.withValues(alpha: 0.2),
+                  width: isSelected ? 2.5 : 1,
                 ),
-                if (isLocked)
-                  const Positioned(
-                    right: -2,
-                    top: -2,
-                    child: LockBadge(size: 20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Paper.shadow(opacity: 0.15),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -312,7 +408,7 @@ class _BrushControls extends StatelessWidget {
               label: 'Tamanho',
               value: state.currentBrush.size,
               min: 1,
-              max: 50,
+              max: 80,
               onChanged: (v) => context.read<CanvasCubit>().setBrushSize(v),
             ),
             _SliderRow(
@@ -327,7 +423,7 @@ class _BrushControls extends StatelessWidget {
               icon: Icons.opacity_rounded,
               label: 'Opacidade',
               value: state.currentBrush.opacity,
-              min: 0.5,
+              min: 0.3,
               max: 1,
               onChanged: (v) => context.read<CanvasCubit>().setOpacity(v),
             ),

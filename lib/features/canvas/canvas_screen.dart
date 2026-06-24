@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
@@ -25,36 +24,12 @@ import 'package:aquarela_watercolor_sketch/features/palette/palette_screen.dart'
 /// minimalist top bar (save + clear) and bottom bar (open palette).
 ///
 /// On a real device the user just drags a finger. We capture
-/// pointer events via [Listener] (lower level than GestureDetector
-/// so we don't lose any frames to gesture arena).
-class CanvasScreen extends StatefulWidget {
+/// pointer events via [GestureDetector] and emit stamps in real
+/// time — every waypoint triggers a paint frame, so the user sees
+/// the pigment as soon as the finger touches down, not only on
+/// finger lift.
+class CanvasScreen extends StatelessWidget {
   const CanvasScreen({super.key});
-
-  @override
-  State<CanvasScreen> createState() => _CanvasScreenState();
-}
-
-class _CanvasScreenState extends State<CanvasScreen>
-    with SingleTickerProviderStateMixin {
-  final GlobalKey _canvasKey = GlobalKey();
-  Ticker? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker(_onTick)..start();
-  }
-
-  void _onTick(Duration elapsed) {
-    if (!mounted) return;
-    context.read<CanvasCubit>().onTick(elapsed);
-  }
-
-  @override
-  void dispose() {
-    _ticker?.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,16 +37,21 @@ class _CanvasScreenState extends State<CanvasScreen>
       backgroundColor: Paper.white,
       body: BlocProvider(
         create: (_) => CanvasCubit(),
-        child: _CanvasView(canvasKey: _canvasKey),
+        child: const _CanvasView(),
       ),
     );
   }
 }
 
-class _CanvasView extends StatelessWidget {
-  const _CanvasView({required this.canvasKey});
+class _CanvasView extends StatefulWidget {
+  const _CanvasView();
 
-  final GlobalKey canvasKey;
+  @override
+  State<_CanvasView> createState() => _CanvasViewState();
+}
+
+class _CanvasViewState extends State<_CanvasView> {
+  final GlobalKey _canvasKey = GlobalKey();
 
   Future<void> _save(BuildContext context) async {
     final cubit = context.read<CanvasCubit>();
@@ -115,7 +95,7 @@ class _CanvasView extends StatelessWidget {
         SnackBar(
           content: Text('Erro ao salvar: $e'),
           // Material error red — only used for transient save errors.
-          backgroundColor: Color(0xFFB00020),
+          backgroundColor: const Color(0xFFB00020),
         ),
       );
     }
@@ -125,7 +105,7 @@ class _CanvasView extends StatelessWidget {
   /// the repaint boundary is missing (e.g. widget unmounted mid-draw).
   Future<Uint8List?> _capturePng() async {
     final boundary =
-        canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+        _canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) return null;
     final image = await boundary.toImage(pixelRatio: 2.0);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -161,7 +141,7 @@ class _CanvasView extends StatelessWidget {
           // Canvas
           Positioned.fill(
             child: RepaintBoundary(
-              key: canvasKey,
+              key: _canvasKey,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onPanStart: (d) =>
@@ -169,6 +149,7 @@ class _CanvasView extends StatelessWidget {
                 onPanUpdate: (d) =>
                     context.read<CanvasCubit>().addPoint(d.localPosition),
                 onPanEnd: (_) => context.read<CanvasCubit>().endStroke(),
+                onPanCancel: () => context.read<CanvasCubit>().cancelStroke(),
                 child: BlocBuilder<CanvasCubit, CanvasState>(
                   builder: (context, state) {
                     return CustomPaint(
@@ -249,35 +230,6 @@ class _CanvasTopBar extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.arrow_back_rounded, color: Paper.charcoal),
             onPressed: () => Navigator.of(context).pop(),
-          ),
-          const Spacer(),
-          BlocBuilder<CanvasCubit, CanvasState>(
-            buildWhen: (a, b) =>
-                a.sessionSecondsRemaining != b.sessionSecondsRemaining,
-            builder: (context, state) {
-              if (state.sessionSecondsRemaining == null) {
-                return const SizedBox.shrink();
-              }
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: state.sessionSecondsRemaining! <= 5
-                      ? Colors.red.shade100
-                      : Paper.cream,
-                  borderRadius: BorderRadius.circular(RadiusToken.full),
-                ),
-                child: Text(
-                  '${state.sessionSecondsRemaining}s',
-                  style: AquarelaTypography.caption.copyWith(
-                    color: Paper.ink,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              );
-            },
           ),
           const Spacer(),
           IconButton(
