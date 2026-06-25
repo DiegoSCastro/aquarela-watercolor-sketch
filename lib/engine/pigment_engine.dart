@@ -10,14 +10,25 @@ import 'package:aquarela_watercolor_sketch/engine/stroke.dart';
 /// [Stamp]s. It's a pure function: same input → same output, no
 /// state, no side effects.
 ///
-/// Three effects drive the look:
-/// 1. **Path stamps** — one stamp per waypoint, radius = brush.size
-/// 2. **Radial bleed** — waterRatio amplifies the stamp radius and
-///    adds N sub-stamps with random offsets for organic edges
-/// 3. **Wet-on-wet bleeding** — when a new stroke passes near an
-///    existing stroke with high water, the colors mix; the new
-///    stamp's color is biased toward the existing one proportional
-///    to proximity
+/// Four distinct stamp strategies — one per brush tip:
+///   - **round**: a clean disc with a soft radial halo of small
+///     sub-stamps for the watercolor bleed.
+///   - **flat**: an oriented oval that follows the stroke
+///     direction; width is fixed, length stretches along the
+///     heading. Sub-stamps are spread along the perpendicular
+///     to mimic the bristles.
+///   - **fan**: a splay of parallel tines (rectangles) along
+///     the stroke direction; gaps between tines let the paper
+///     show through — that's what makes a fan brush recognizable.
+///   - **mop**: a large, soft disc with an irregular jagged
+///     edge (mop bristles don't form a clean circle); a few
+///     low-alpha sub-stamps extend the halo further than other
+///     brushes.
+///
+/// All four also share wet-on-wet color bleeding: if the brush
+/// is wet and the path passes near an existing stroke, the new
+/// stamp's color is biased toward the existing one proportional
+/// to proximity.
 class PigmentEngine {
   const PigmentEngine._();
 
@@ -38,7 +49,7 @@ class PigmentEngine {
   /// [pigment] — the active pigment (color, absorption).
   /// [path] — finger waypoints. Empty list returns empty list.
   /// [existing] — strokes already on the canvas. Used for
-  ///   wet-on-wet color bleeding (PR 2.1).
+  ///   wet-on-wet color bleeding.
   static List<Stamp> stroke({
     required Brush brush,
     required Pigment pigment,
@@ -56,130 +67,316 @@ class PigmentEngine {
     final absorptionFactor = 0.8 + pigment.absorption * 0.6;
     final baseRadius = brush.size * bleedFactor * absorptionFactor;
 
-    // Brush-type multipliers — round keeps its base radius; flat
-    // elongates horizontally; fan adds many sub-stamps with high
-    // jitter for a dry-brush look; mop is large and soft.
-    final typeMult = _typeMultipliers(brush.type);
+    for (var i = 0; i < path.length; i++) {
+      final p = path[i];
+      // Heading: direction the finger is moving in. Used by flat
+      // and fan brushes to align the stamp with the stroke. For
+      // the first point, fall back to the heading of the next
+      // segment; if there isn't one (single dot), use 0.
+      final prev = i > 0 ? path[i - 1] : null;
+      final next = i + 1 < path.length ? path[i + 1] : null;
+      final heading = _heading(prev, p, next);
 
-    for (final p in path) {
       // Wet-on-wet color mix: if the brush is wet and the path
       // passes near an existing stroke, bias the new stamp color
-      // toward the existing one. Returns the original color if
-      // there is no nearby stroke.
+      // toward the existing one.
       final mixColor = _wetMix(p, brush, pigment, existing);
 
-      // Center stamp (always full size, no jitter).
-      stamps.add(
-        Stamp(
-          offset: p,
-          radius: baseRadius * typeMult.radius,
-          color: mixColor,
-          alpha: brush.opacity,
-        ),
-      );
-
-      // Bleed sub-stamps: small offsets and slightly different
-      // radii, for organic edges. Number of sub-stamps scales with
-      // waterRatio AND brush type: fan brushes always emit many,
-      // mop brushes emit a wide halo, flat brushes a tight row.
-      final samples = (brush.waterRatio * _bleedSamples * typeMult.samples)
-          .round();
-      for (var s = 0; s < samples; s++) {
-        final angle = random.nextDouble() * 2 * math.pi;
-        final distance = baseRadius *
-            typeMult.radius *
-            (0.5 + random.nextDouble() * 0.5);
-        final dx = math.cos(angle) * distance * typeMult.spreadX;
-        final dy = math.sin(angle) * distance * typeMult.spreadY;
-        final subRadius = baseRadius *
-            typeMult.radius *
-            (0.3 + random.nextDouble() * 0.4);
-        final subAlpha =
-            brush.opacity * typeMult.subAlpha * (0.3 + random.nextDouble() * 0.4);
-
-        stamps.add(
-          Stamp(
-            offset: p + Offset(dx, dy),
-            radius: subRadius,
+      // Dispatch to the per-shape strategy. Each branch is
+      // independent — no shared "multipliers + radial noise"
+      // math that would blur the differences together.
+      switch (brush.type) {
+        case BrushType.round:
+          _emitRound(
+            stamps: stamps,
+            random: random,
+            point: p,
+            radius: baseRadius,
             color: mixColor,
-            alpha: subAlpha.clamp(0.0, 1.0),
-          ),
-        );
+            brush: brush,
+          );
+        case BrushType.flat:
+          _emitFlat(
+            stamps: stamps,
+            random: random,
+            point: p,
+            radius: baseRadius,
+            color: mixColor,
+            brush: brush,
+            heading: heading,
+          );
+        case BrushType.fan:
+          _emitFan(
+            stamps: stamps,
+            random: random,
+            point: p,
+            radius: baseRadius,
+            color: mixColor,
+            brush: brush,
+            heading: heading,
+          );
+        case BrushType.mop:
+          _emitMop(
+            stamps: stamps,
+            random: random,
+            point: p,
+            radius: baseRadius,
+            color: mixColor,
+            brush: brush,
+          );
       }
     }
 
     return stamps;
   }
 
-  /// Per-brush-type tuning. Keeps the base engine math intact
-  /// while letting each tip behave like its real-world counterpart.
-  static _BrushTuning _typeMultipliers(BrushType type) {
-    switch (type) {
-      case BrushType.round:
-        return const _BrushTuning(
-          radius: 1.0,
-          samples: 1.0,
-          spreadX: 1.0,
-          spreadY: 1.0,
-          subAlpha: 1.0,
-        );
-      case BrushType.flat:
-        // Flat brushes leave a horizontal streak — wider X spread,
-        // tighter Y. Fewer jittered sub-stamps.
-        return const _BrushTuning(
-          radius: 1.1,
-          samples: 0.6,
-          spreadX: 1.4,
-          spreadY: 0.5,
-          subAlpha: 0.85,
-        );
-      case BrushType.fan:
-        // Fan brushes spread pigment unevenly — many small, dry
-        // sub-stamps with chaotic offsets.
-        return const _BrushTuning(
-          radius: 0.9,
-          samples: 1.6,
-          spreadX: 1.2,
-          spreadY: 1.2,
-          subAlpha: 0.5,
-        );
-      case BrushType.mop:
-        // Mop brushes are big and soft — large radius, low alpha
-        // per sub-stamp, wide halo.
-        return const _BrushTuning(
-          radius: 1.6,
-          samples: 1.4,
-          spreadX: 1.0,
-          spreadY: 1.0,
-          subAlpha: 0.6,
-        );
-    }
-  }
-
   /// Convert a single touch waypoint into the stamps that should
   /// appear for that one point. Used for **real-time** rendering:
   /// the canvas emits stamps as the finger moves, not only on lift.
   ///
-  /// [brush] / [pigment] — the active tool.
-  /// [point] — the new waypoint.
-  /// [existing] — strokes already on the canvas. Used for
-  ///   wet-on-wet color bleeding. The stroke being currently
-  ///   drawn (if any) is represented here as a [Stroke] whose
-  ///   `stamps` field carries the stamps already emitted for the
-  ///   same drag — that way wet-on-wet can blend within the same
-  ///   stroke as it grows.
+  /// [previousPoint] — the last waypoint, if any. Used to compute
+  /// the stroke heading so flat/fan brushes can orient themselves.
+  /// Pass null for the very first waypoint of a stroke.
   static List<Stamp> stamp({
     required Brush brush,
     required Pigment pigment,
     required Offset point,
+    required Offset? previousPoint,
     required List<Stroke> existing,
   }) {
+    final path = previousPoint != null
+        ? <Offset>[previousPoint, point]
+        : <Offset>[point];
     return stroke(
       brush: brush,
       pigment: pigment,
-      path: [point],
+      path: path,
       existing: existing,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Per-shape stamp strategies
+  //
+  // Each function appends one or more stamps to [stamps]. The
+  // strategies are intentionally different in shape, not just in
+  // numerical multipliers — that's what makes the brushes visually
+  // distinct instead of "same circle, slightly fatter".
+  // ---------------------------------------------------------------------------
+
+  /// Round tip: clean center disc + soft halo of small sub-discs.
+  /// This is the baseline brush — the others are variations on it.
+  static void _emitRound({
+    required List<Stamp> stamps,
+    required math.Random random,
+    required Offset point,
+    required double radius,
+    required Color color,
+    required Brush brush,
+  }) {
+    // Center stamp (full opacity, no jitter).
+    stamps.add(
+      Stamp(
+        offset: point,
+        radius: radius,
+        color: color,
+        alpha: brush.opacity,
+        shape: StampShape.round,
+      ),
+    );
+    // Halo: waterRatio drives the count of sub-stamps.
+    final samples = (brush.waterRatio * _bleedSamples).round();
+    for (var s = 0; s < samples; s++) {
+      final angle = random.nextDouble() * 2 * math.pi;
+      final distance = radius * (0.5 + random.nextDouble() * 0.5);
+      stamps.add(
+        Stamp(
+          offset: point +
+              Offset(math.cos(angle) * distance, math.sin(angle) * distance),
+          radius: radius * (0.3 + random.nextDouble() * 0.4),
+          color: color,
+          alpha: brush.opacity * (0.3 + random.nextDouble() * 0.4),
+          shape: StampShape.round,
+        ),
+      );
+    }
+  }
+
+  /// Flat tip: oriented oval that follows the stroke heading,
+  /// plus a few bristles spread along the perpendicular axis.
+  /// The oval's length stretches along [heading]; the painter
+  /// rotates the canvas before drawing.
+  static void _emitFlat({
+    required List<Stamp> stamps,
+    required math.Random random,
+    required Offset point,
+    required double radius,
+    required Color color,
+    required Brush brush,
+    required double heading,
+  }) {
+    // Aspect ratio: how much longer than wide the oval is. Flat
+    // brushes are typically ~3x longer than wide.
+    const aspectRatio = 3.0;
+    // A few perpendicular bristles — the visible "flat" texture.
+    const bristleCount = 5;
+    final bristleSpread = radius * 0.6;
+
+    // Main oval stamp.
+    stamps.add(
+      Stamp(
+        offset: point,
+        radius: radius,
+        color: color,
+        alpha: brush.opacity * 0.85,
+        shape: StampShape.oval,
+        angle: heading,
+        aspectRatio: aspectRatio,
+      ),
+    );
+
+    // Bristles: thin parallel ovals along the same heading,
+    // offset perpendicular to it.
+    for (var b = 0; b < bristleCount; b++) {
+      // Spread evenly from -bristleSpread to +bristleSpread.
+      final t = (b - (bristleCount - 1) / 2) / (bristleCount - 1);
+      final perpX = -math.sin(heading);
+      final perpY = math.cos(heading);
+      final offset = Offset(perpX * bristleSpread * t, perpY * bristleSpread * t);
+      // Each bristle is shorter than the main oval and slightly
+      // thinner. A bit of random jitter so they don't look stamped.
+      final jitterAngle = heading + (random.nextDouble() - 0.5) * 0.08;
+      stamps.add(
+        Stamp(
+          offset: point + offset,
+          radius: radius * 0.45,
+          color: color,
+          alpha: brush.opacity * (0.25 + random.nextDouble() * 0.25),
+          shape: StampShape.oval,
+          angle: jitterAngle,
+          aspectRatio: 4.0,
+        ),
+      );
+    }
+  }
+
+  /// Fan tip: a splay of parallel thin rectangles (tines) along
+  /// [heading]. Gaps between tines are what makes a fan brush
+  /// recognizable — a fan doesn't deposit a continuous stroke,
+  /// it deposits several streaks.
+  static void _emitFan({
+    required List<Stamp> stamps,
+    required math.Random random,
+    required Offset point,
+    required double radius,
+    required Color color,
+    required Brush brush,
+    required double heading,
+  }) {
+    // Tine configuration: ~6 thin streaks spread across the
+    // brush width. Each tine is a rect.
+    const tineCount = 6;
+    final tineLength = radius * 2.0;
+    final tineWidth = (radius * 1.4) / tineCount;
+    final totalWidth = tineCount * tineWidth;
+    final firstOffset = -totalWidth / 2 + tineWidth / 2;
+
+    // Perpendicular direction for tine spacing.
+    final perpX = -math.sin(heading);
+    final perpY = math.cos(heading);
+
+    for (var i = 0; i < tineCount; i++) {
+      // Evenly spaced perpendicular to heading. A bit of random
+      // jitter per tine so it doesn't look mechanical.
+      final spacing = firstOffset + i * tineWidth;
+      final jitter = (random.nextDouble() - 0.5) * tineWidth * 0.3;
+      final tineOffset =
+          Offset(perpX * (spacing + jitter), perpY * (spacing + jitter));
+
+      // Some tines are more pigment-loaded than others — that's
+      // the "dry brush" effect on a fan brush.
+      final load = 0.4 + random.nextDouble() * 0.6;
+      // Skip ~15% of tines for the "gappy" fan look.
+      if (random.nextDouble() < 0.15) continue;
+
+      stamps.add(
+        Stamp(
+          offset: point + tineOffset,
+          radius: tineWidth * 0.5,
+          color: color,
+          alpha: brush.opacity * load * 0.7,
+          shape: StampShape.fan,
+          angle: heading,
+          tineCount: 1,
+          tineLength: tineLength,
+          tineWidth: tineWidth,
+        ),
+      );
+    }
+  }
+
+  /// Mop tip: a large, soft disc with an irregular jagged edge.
+  /// Mop brushes have splayed bristles — the deposit is bigger
+  /// and softer than a round brush, with a fuzzy edge.
+  static void _emitMop({
+    required List<Stamp> stamps,
+    required math.Random random,
+    required Offset point,
+    required double radius,
+    required Color color,
+    required Brush brush,
+  }) {
+    // Main disc — bigger than a round brush, lower opacity, with
+    // edge jitter so the painter renders an irregular outline.
+    final edgeJitter = radius * 0.15;
+    stamps.add(
+      Stamp(
+        offset: point,
+        radius: radius * 1.4,
+        color: color,
+        alpha: brush.opacity * 0.55,
+        shape: StampShape.mop,
+        edgeJitter: edgeJitter,
+      ),
+    );
+    // A handful of soft halo sub-stamps with high jitter to
+    // extend the splay.
+    final samples = (brush.waterRatio * _bleedSamples * 1.4).round();
+    for (var s = 0; s < samples; s++) {
+      final angle = random.nextDouble() * 2 * math.pi;
+      final distance = radius * (0.7 + random.nextDouble() * 0.7);
+      stamps.add(
+        Stamp(
+          offset: point +
+              Offset(math.cos(angle) * distance, math.sin(angle) * distance),
+          radius: radius * (0.4 + random.nextDouble() * 0.5),
+          color: color,
+          alpha: brush.opacity * 0.25 * (0.3 + random.nextDouble() * 0.4),
+          shape: StampShape.round,
+        ),
+      );
+    }
+  }
+
+  /// Heading of the finger at point [p], given the previous and
+  /// next waypoints. Falls back to the next segment if no
+  /// previous exists, or to 0 (east) if neither does.
+  static double _heading(Offset? prev, Offset p, Offset? next) {
+    Offset? a;
+    Offset? b;
+    if (prev != null) {
+      a = prev;
+      b = p;
+    } else if (next != null) {
+      a = p;
+      b = next;
+    } else {
+      return 0.0;
+    }
+    final dx = b.dx - a.dx;
+    final dy = b.dy - a.dy;
+    if (dx == 0 && dy == 0) return 0.0;
+    return math.atan2(dy, dx);
   }
 
   /// the original pigment color if no existing stroke is close
@@ -201,18 +398,12 @@ class PigmentEngine {
     // **Performance**: first filter by the stroke's bounding box —
     // if the query point is farther than [_wetBleedRadius] from the
     // box, the stroke can't possibly contribute, and we skip the
-    // inner stamp loop entirely. This turns a naive O(total_stamps)
-    // scan into O(stamps_nearby), which is the difference between a
-    // 60fps paint and a 5fps stutter once 10+ strokes are on canvas.
-    Stroke? nearestStroke;
+    // inner stamp loop entirely.
     Stamp? nearestStamp;
     var nearestDistSq = _wetBleedRadius * _wetBleedRadius;
 
     for (final stroke in existing) {
       if (stroke.stamps.isEmpty) continue;
-      // Quick reject: bounding box vs query point. We expand the
-      // box by the bleed radius so we still find stamps just
-      // outside the actual stamp extent.
       final bounds = stroke.bounds;
       final expanded = bounds.inflate(_wetBleedRadius);
       if (p.dx < expanded.left ||
@@ -228,12 +419,11 @@ class PigmentEngine {
         if (distSq < nearestDistSq) {
           nearestDistSq = distSq;
           nearestStamp = stamp;
-          nearestStroke = stroke;
         }
       }
     }
 
-    if (nearestStamp == null || nearestStroke == null) return pigment.color;
+    if (nearestStamp == null) return pigment.color;
 
     // Strength of the mix falls off with distance. 0 at the edge
     // of the bleed radius, 1 right on top of the existing stamp.
@@ -249,31 +439,4 @@ class PigmentEngine {
     return Color.lerp(pigment.color, nearestStamp.color, mixAmount) ??
         pigment.color;
   }
-}
-
-/// Per-brush-type tuning table. Private to the engine — callers
-/// don't need to know about it.
-class _BrushTuning {
-  const _BrushTuning({
-    required this.radius,
-    required this.samples,
-    required this.spreadX,
-    required this.spreadY,
-    required this.subAlpha,
-  });
-
-  /// Multiplier on the base radius for both the center and sub stamps.
-  final double radius;
-
-  /// Multiplier on the bleed sub-stamp count.
-  final double samples;
-
-  /// Horizontal / vertical stretch of the sub-stamp cloud. Flat
-  /// brushes get spreadX > spreadY to look like a horizontal streak.
-  final double spreadX;
-  final double spreadY;
-
-  /// Multiplier on the alpha of each sub-stamp. Lower for fan/mop
-  /// (softer edges), higher for round/flat (crisper deposits).
-  final double subAlpha;
 }
