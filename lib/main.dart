@@ -7,7 +7,7 @@ import 'package:aquarela_watercolor_sketch/features/onboarding/onboarding_screen
 import 'package:aquarela_watercolor_sketch/theme/aquarela_theme.dart';
 import 'package:aquarela_watercolor_sketch/theme/tokens/paper.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -17,8 +17,9 @@ void main() {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
-  // Fire and forget — banner loading waits for this in the widget.
-  AdService.init();
+  // Must complete before any ad widget loads; missing GADApplicationIdentifier
+  // in Info.plist crashes iOS at native init time.
+  await AdService.init();
   runApp(const AquarelaApp());
 }
 

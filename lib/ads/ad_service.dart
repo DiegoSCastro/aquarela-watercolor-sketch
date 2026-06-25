@@ -38,7 +38,7 @@ class AdService {
     // throws on init; swallow so tests / hot reload don't crash.
     try {
       await MobileAds.instance.initialize();
-    } on Exception catch (e) {
+    } on Object catch (e) {
       debugPrint('AdService.init failed: $e');
     }
   }
