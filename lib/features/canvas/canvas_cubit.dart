@@ -264,10 +264,17 @@ class CanvasCubit extends Cubit<CanvasState> {
       ),
     ];
 
+    // Heading-aware stamping: pass the previous waypoint so the
+    // engine can orient flat/fan stamps along the stroke direction.
+    // For the very first waypoint, the previous is null.
+    final previousPoint =
+        _livePath.length >= 2 ? _livePath[_livePath.length - 2] : null;
+
     final newStamps = PigmentEngine.stamp(
       brush: brush,
       pigment: pigment,
       point: point,
+      previousPoint: previousPoint,
       existing: existing,
     );
 
